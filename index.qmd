@@ -1,0 +1,12 @@
+---
+title: "Datafigure"
+format: html
+website:
+  navbar:
+    search: true
+    title: "Datafigure"
+---
+
+# Workshops
+
+# Consulting
