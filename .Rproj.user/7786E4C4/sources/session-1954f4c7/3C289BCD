@@ -1,6 +1,6 @@
 {
     "id": "3C289BCD",
-    "path": "~/GitHub/datafigure/_quarto.yml",
+    "path": "~/GitHub/datafigure.github.io/_quarto.yml",
     "project_path": "_quarto.yml",
     "type": "yaml",
     "hash": "0",
@@ -16,11 +16,11 @@
         "scrollLine": "3"
     },
     "folds": "",
-    "lastKnownWriteTime": 1676813197,
+    "lastKnownWriteTime": 1676813888,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1676813197685,
+    "last_content_update": 1676813888,
     "read_only": false,
     "read_only_alternatives": []
 }
