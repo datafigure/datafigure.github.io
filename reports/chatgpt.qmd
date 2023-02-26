@@ -45,7 +45,7 @@ x = read_excel("C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutu
 ```
 
 <font size="2">
-[English version [here](datafigure.eu/raportid/chatgpt_eng.html)]</font>
+[English version [here](chatgpt_eng.html)]</font>
 
 Enne raporti lugemust palume täita väikse arvamusküsimustiku. Ainult 6 valikvastustega küsimust, võtab vast 3-4 minutit, aga tulemustest saame aimu, kus ülikoolipere praegu nendes küsimustes seisab:
 <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a><br>

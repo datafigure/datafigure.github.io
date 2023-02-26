@@ -22,5 +22,11 @@
   },
   "raportid/chatgpt_eng.qmd": {
     "chatgpt_eng.html": "ace15a17"
+  },
+  "reports/chatgpt.qmd": {
+    "chatgpt.html": "1f88d459"
+  },
+  "reports/chatgpt_eng.qmd": {
+    "chatgpt_eng.html": "569766b7"
   }
 }
