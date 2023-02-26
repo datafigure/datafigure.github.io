@@ -1,0 +1,3 @@
+[2,"\n"]
+[1,"\r\n\r\nprocessing file: chatgpt_eng.qmd\r\n"]
+[1,"Error in loadNamespace(i, c(lib.loc, .libPaths()), versionCheck = vI[[i]]) : \r\n  namespace 'rlang' 1.0.4 is already loaded, but >= 1.0.6 is required\r\nCalls: .main ... asNamespace -> loadNamespace -> namespaceImport -> loadNamespace\r\nExecution halted\r\n"]

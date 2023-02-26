@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.159">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Datafigure - ChatGPT and the new text generators: workshop feedback report and a survey</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Datafigure</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html" rel="" target="">
+ <span class="menu-text">Workshops</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../past.html" rel="" target="">
+ <span class="menu-text">Past workshops</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../consulting.html" rel="" target="">
+ <span class="menu-text">Consulting</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../contact.html" rel="" target="">
+ <span class="menu-text">Contact</span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#teaching-and-evaluation-in-the-new-situation" id="toc-teaching-and-evaluation-in-the-new-situation" class="nav-link" data-scroll-target="#teaching-and-evaluation-in-the-new-situation">Teaching and evaluation in the new situation</a></li>
+  <li><a href="#who-makes-the-rules" id="toc-who-makes-the-rules" class="nav-link" data-scroll-target="#who-makes-the-rules">Who makes the rules?</a></li>
+  <li><a href="#academic-writing-and-ai-in-the-curriculum" id="toc-academic-writing-and-ai-in-the-curriculum" class="nav-link" data-scroll-target="#academic-writing-and-ai-in-the-curriculum">Academic writing and AI in the curriculum</a></li>
+  <li><a href="#education-in-general" id="toc-education-in-general" class="nav-link" data-scroll-target="#education-in-general">Education in general</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ChatGPT and the new text generators: workshop feedback report and a survey</h1>
+<p class="subtitle lead">Andres Karjus (Tallinn University / Datafigure OÜ)<br>27.02.2023</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<style>
+p {
+  text-align: justify !important
+}
+</style>
+<p>Before getting into the report, kindly fill out this survey. It’s short, multiple choice, and will only take 3-4 minutes to complete, but will hopefully give us an idea where university staff currently stands on these issues: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a></p>
+<hr>
+<section id="overview" class="level1">
+<h1>Overview</h1>
+<p>Three workshops, 2 in Estonian and 1 in English, were held at Tallinn University during 13-22.02.2023, attended by a total of 127 university employees. During these workshops, the instructor provided an overview of the applications of generative artificial intelligence, with a focus on text generators such as ChatGPT. Its capabilities were also tested live in the classroom. <br></p>
+<div class="cell quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<p><img src="1e.png" class="img-fluid" width="1920"></p>
+</div>
+<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<p><img src="2e.png" class="img-fluid" width="1920"></p>
+</div>
+<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<p><img src="3e.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<p><br></p>
+<p>In the second half of the workshop, problem-centered discussions took place in small groups, followed by a summarizing joint discussion. In order to find answers to the proposed questions, a total of 21 groups were formed across the three workshops, which generally focused on addressing 1-2 questions. Feedback, ideas, and problems were noted down, with a total of 40 written group responses collected.</p>
+<p>It is evident that limiting or banning the usage of AI-driven writing tools is essentially impossible (except perhaps using paper and pen during exams where electronic devices, including smartwatches, would not be available to the examinees). However, it is not clear whether limiting these tools is even necessary. Rather, they are seen as potentially useful new tools, and it should be taught to both students and teaching staff how to responsibly and meaningfully use them (as they are already being used anyway). Nevertheless, there are different opinions (e.g.&nbsp;“ChatGPT is not plagiarism, but it is cheating”).</p>
+<p>Several university employees mentioned that they already use ChatGPT, including for writing research articles, programming, and preparing teaching materials and documents. It is important to note that this does not mean that it is used to write entire pieces of work from start to finish, but rather that ChatGPT can be used for various practical purposes, including paraphrasing, grammar checking, and generating templates for exercises to be used in teaching (which of course need to be checked manually).</p>
+</section>
+<section id="teaching-and-evaluation-in-the-new-situation" class="level1">
+<h1>Teaching and evaluation in the new situation</h1>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
+<p>The consensus seems to be that there is a need to at least rethink assessment and teaching methods, but perhaps to make some changes as well. It was highlighted that one solution would be to move towards assessment methods centered around direct communication, including conversations, oral exams, presentations, and defenses (“returning to the Socratic method,” as one lecturer put it). It was also suggested that when it comes to submitted work, there should be an obligation to demonstrate the original source of one’s ideas, for example, through screenshots or links, and in theses, it should be clear where and how data was collected. It appears that there is general agreement that plain summarizing formats and reports may have outlived their usefulness. When discussing assessment, questions were raised about the assessment system as a whole. Although only a few of the discussion questions pertained to assessment, it was mentioned in nearly half of the written group responses.</p>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="cell-output-display">
+<p><img src="chatgpt_eng_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="864"></p>
+</div>
+</div>
+</div>
+</div>
+<p>However, there is also a keen awareness that revising assessment methods and materials, increasing the proportion of oral exams or process-oriented work, and more closely checking the sources in written work - all take extra time for the lecturer. It is unclear where this additional time should come from. Large courses with over a hundred students are seen as potentially problematic, as the use of any “Socratic methods” in such cases is a challenging.</p>
+<blockquote class="blockquote">
+<p><font size="5">“</font>Are we evaluating the student’s outcome, or their learning process?”</p>
+</blockquote>
+<p>At the same time, it was repeatedly emphasized that we should not assume that students would want to cheat or plagiarize at the first opportunity: “people have come to the university to learn.” Nevertheless, it was noted that if a student is under time pressure (due to personal issues or other obligations such as work), using AI for certain types of tasks could be a tempting solution. Therefore, it is important to consider which tasks motivate students to do the work themselves and learn through the work (possibly using AI as an aid, not as a substitute). The question remains as to how to equally assess works, when it is suspected (although of course cannot be proven) that one student has generated their work in just a few minutes, while another has put in hours or days.</p>
+</section>
+<section id="who-makes-the-rules" class="level1">
+<h1>Who makes the rules?</h1>
+<p>While some expressed the view that there may be no need for changes in education, the majority appeared to believe that some change is inevitable. In general, it should be decided who decides on these issues and sets the rules. Several people said that the lecturer should still have the autonomy to decide for themselves, but it was also suggested that clarity from the university or even the government would be helpful, and general rules or best practices should be agreed upon. In the final discussion of all three workshops, the idea emerged that in every larger unit, it would be good to appoint or hire a competent spokesperson or commissioner to deal with these issues. Particularly so given the fast pace of things - for example, ChatGPT is currently one of the most powerful models, but pales in comparison to the even more powerful tools currently being developed that will be released soon enough.</p>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
+<p>In light of the likely growing amount of additional work and the fact that such tools allow some things to be done more productively or automated, one cannot ignore the question of whether lecturers could use them for evaluating and providing feedback on student work. There were different opinions on this, but no one explicitly against. The question is rather whether, if it is done, it should be transparent, meaning whether the feedback to the student should include a statement like “your work was assessed with the help of ChatGPT” - and how this could be perceived. If this is done, the student may well question what the lecturer’s role actually is any more. On the other hand, it cannot be assumed either that all lecturers are capable of using these tools, if they have not been trained. Much is still uncertain - as reflected in the written component, where ten of the 40 group responses included a question or several.</p>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="cell-output-display">
+<p><img src="chatgpt_eng_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="864"></p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="academic-writing-and-ai-in-the-curriculum" class="level1">
+<h1>Academic writing and AI in the curriculum</h1>
+<p>There was also discussion about writing and self-expression skills and how to teach them. Everyone agrees that these are essential skills, but it is no longer clear what are the best and most up-to-date ways to teach them. Writing assignments are currently used to assess and evaluate also knowledge and various skills. The question is whether this is the only way - especially when machines are now capable of writing quite well and faster than humans in many genres. Even if the AI makes a mistake, they are generally easier to correct than writing the entire text oneself. A recurring suggestion was that courses on academic writing and learning in higher education should be updated, but it was also suggested that entirely new subjects may need to be created. There was also discussion about whether certain specialized subjects should be updated to teach students about AI-based solutions, as these will likely be needed on the job market.</p>
+<blockquote class="blockquote">
+<p><font size="5">“</font>Written expression skills are no longer a measure of knowledge. Higher education, which is centered around (written) text, needs a complete rethink.”</p>
+</blockquote>
+</section>
+<section id="education-in-general" class="level1">
+<h1>Education in general</h1>
+<p>One discussion question also addressed general education and high school essays (the Estonian <em>kirjand</em> genre). Of the three groups that dealt with this, two found that traditional paper and pencil essay writing should remain, as it teaches pupils self-expression skills. However, it was also emphasized that digital skills competency should be developed regardless, and that teachers should be trained so that their skills do not fall behind those of their students. It was suggested that the proportion of computer science education should be increased, and should begin already in primary school. It was noted that there are already inequalities in this between larger centers such as Tallinn and smaller places, which differences in the use and teaching of AI may further exacerbate. All of this requires attention at the national level.</p>
+</section>
+<section id="summary" class="level1">
+<h1>Summary</h1>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
+<p>What we have here is a new and rapidly evolving situation. Since the announcement of the workshops and the writing of this report, the version number of ChatGPT has increased several times. More capable chatbots such as Bing AI and Google Bard, which have been announced with limited beta access, are likely to become more widely accessible soon. Similar rapid advancements are taking place in other generative AI applications; new and again even more realistic and capable image generators have come out in the last months (and weeks). While educators are ready to update their materials and courses, they also need resources and support, including training and agreement on common standards and best practices.</p>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<blockquote class="blockquote">
+<p><font size="5">“</font>Universities must teach for the future, not run after the job market.”</p>
+</blockquote>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
+<p>While there is some noise and hype surrounding this topic, it is clear that these technologies are here to stay, and will only become better, faster, and more accessible. This means that education must keep up with the times - both general, vocational and higher education. But perhaps this is also a good opportunity to rethink some outdated models and methods, analyze what works and what does not, and ultimately reach even better, more exciting, and more effective teaching methods.</p>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="cell-output-display">
+<p><img src="chatgpt_eng_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="864"></p>
+</div>
+</div>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -13,5 +13,14 @@
   },
   "consulting.qmd": {
     "consulting.html": "0b940267"
+  },
+  "chatgptRaport/index.qmd": {
+    "index.html": "c9c1f59a"
+  },
+  "raportid/chatgpt.qmd": {
+    "chatgpt.html": "48a6aeca"
+  },
+  "raportid/chatgpt_eng.qmd": {
+    "chatgpt_eng.html": "ace15a17"
   }
 }
