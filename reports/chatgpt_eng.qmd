@@ -48,7 +48,7 @@ x = read_excel("C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutu
 
 
 
-Before getting into the report, please fill out this short AI opinion survey. It's multiple choice, ~3-4 minutes to complete, but will hopefully give us an idea where university staff currently stands on these issues: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a>
+TLU staff: before getting into the report, please fill out this short AI opinion **survey**. It's multiple choice, ~3-4 minutes to complete, but will hopefully give us an idea where university staff currently stands on these issues: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a>
 
 
 
