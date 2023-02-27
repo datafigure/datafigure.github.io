@@ -1,5 +1,5 @@
 ---
-title: "ChatGPT and the new text generators:\nworkshop feedback report and a survey"
+title: "ChatGPT and the new text generators<br><font size='5'>Workshop feedback report and a survey</font>"
 subtitle: "Andres Karjus (Tallinn University / Datafigure OÜ)<br>27.02.2023"
 knitr:
   opts_chunk: 
@@ -9,6 +9,8 @@ knitr:
 format: 
   html:
     toc: true
+    toc-location: left
+    toc-title: " "
     background-color: white
     fig-width: 9
     fig-height: 6
@@ -46,7 +48,7 @@ x = read_excel("C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutu
 
 
 
-Before getting into the report, please fill out this short AI opinion survey. It's multiple choice and will only take 3-4 minutes to complete, but will hopefully give us an idea where university staff currently stands on these issues: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a>
+Before getting into the report, please fill out this short AI opinion survey. It's multiple choice, ~3-4 minutes to complete, but will hopefully give us an idea where university staff currently stands on these issues: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a>
 
 
 

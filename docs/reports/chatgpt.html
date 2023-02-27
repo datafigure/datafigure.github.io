@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Datafigure - ChatGPT ja uued tekstigeneraatorid: koolituse tagasiside raport ja küsimustik</title>
+<title>Datafigure - ChatGPT ja uued tekstigeneraatoridKoolituse tagasiside raport ja küsimustik</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,6 +30,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
+<link href="../fav.png" rel="icon" type="image/png">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -63,7 +64,7 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="../styles.css">
 </head>
 
-<body class="nav-fixed">
+<body class="floating nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -104,10 +105,8 @@ ul.task-list li input[type="checkbox"] {
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-<!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc" class="toc-active">
    
   <ul>
   <li><a href="#ülevaade" id="toc-ülevaade" class="nav-link active" data-scroll-target="#ülevaade">Ülevaade</a></li>
@@ -116,15 +115,19 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#kirjalik-eneseväljendus-ja-ai-õppeainetes" id="toc-kirjalik-eneseväljendus-ja-ai-õppeainetes" class="nav-link" data-scroll-target="#kirjalik-eneseväljendus-ja-ai-õppeainetes">Kirjalik eneseväljendus ja AI õppeainetes</a></li>
   <li><a href="#üldharidus" id="toc-üldharidus" class="nav-link" data-scroll-target="#üldharidus">Üldharidus?</a></li>
   <li><a href="#kokkuvõtteks" id="toc-kokkuvõtteks" class="nav-link" data-scroll-target="#kokkuvõtteks">Kokkuvõtteks</a></li>
+  <li><a href="#koolituse-slaide" id="toc-koolituse-slaide" class="nav-link" data-scroll-target="#koolituse-slaide">Koolituse slaide</a></li>
   </ul>
 </nav>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">ChatGPT ja uued tekstigeneraatorid: koolituse tagasiside raport ja küsimustik</h1>
+<h1 class="title">ChatGPT ja uued tekstigeneraatorid<br><font size="5">Koolituse tagasiside raport ja küsimustik</font></h1>
 <p class="subtitle lead">Andres Karjus (Tallinna Ülikool / Datafigure OÜ)<br>27.02.2023</p>
 </div>
 
@@ -144,39 +147,62 @@ ul.task-list li input[type="checkbox"] {
 p {
   text-align: justify !important
 }
+
+.zoom {
+  padding: 0px;
+  background-color: white;
+  transition: transform .2s; /* Animation */
+  margin: 0px;
+}
+
+.zoom:hover {
+  transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+  z-index:1;
+  position:relative;
+  border-style: solid;
+  border-color: white;
+  border: 5px solid #fcfcfc;
+  padding: 0px;
+  margin: 0px;
+  background-color: #fcfcfc;
+}
 </style>
 <p><font size="2"> [English version <a href="chatgpt_eng.html">here</a>]</font></p>
-<p>Enne raporti lugemust palume täita väikse arvamusküsimustiku. Ainult 6 valikvastustega küsimust, võtab vast 3-4 minutit, aga tulemustest saame aimu, kus ülikoolipere praegu nendes küsimustes seisab: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a><br> (NB, see on erinev koolituse omast, palume täita ka seal osalenutel)</p>
+<p>Enne raporti lugemust palume täita väikse <strong>küsimustiku</strong>. Ainult 7 valikvastusega küsimust, ~3‑4 minutit, aga tulemustest saame aimu, kus ülikoolipere praegu nendes küsimustes seisab: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a><br> <font size="3">(see on erinev koolituse ideekorjest; palume täita ka seal osalenutel)</font></p>
 <hr>
 <p><br></p>
 <section id="ülevaade" class="level1">
 <h1>Ülevaade</h1>
 <p>13-22.02.2023 toimus Tallinna Ülikoolis kolm koolitust (2 eesti, 1 inglise keeles), kust võttis osa kokku 127 ülikooli töötajat. Selle käigus andis koolitaja ülevaate generatiivse tehisintellekti rakendustest, fookusega tekstigeneraatoritel nagu ChatGPT, mille võimekust katsetati ka sealsamas klassiruumis. <br></p>
-<div class="cell quarto-layout-panel">
+<div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="cell zoom quarto-layout-cell" data-caption="Liiguta kursor slaidile et suurendada" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
 <p><img src="1.png" class="img-fluid" width="1920"></p>
 </div>
-<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
-<p><img src="3.png" class="img-fluid" width="1920"></p>
-</div>
-<div class="cell-output-display quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
-<p><img src="4.png" class="img-fluid" width="1920"></p>
 </div>
 </div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="2.1.png" class="img-fluid" width="1920"></p>
 </div>
-<p><br></p>
-<p>Koolituse teises pooles toimusid probleemikesksed arutelud väikestes rühmades ning lõpus kokkuvõttev ühine diskussioon. Välja pakutud 13 küsimusele vastuste leidmiseks moodustati kolmel koolitusel kokku 21 gruppi, mis omakorda keskendusid üldjuhul 1-2 küsimuse lahendamisele. Tekkinud vastukaja, ideed ja probleemid paluti ka kirja panna; kokku kogunes 40 vastust. <br></p>
-<div class="cell quarto-layout-panel">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
-<p><img src="6.png" class="img-fluid" width="1920"></p>
 </div>
-<div class="cell-output-display quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
 <p><img src="7.png" class="img-fluid" width="1920"></p>
 </div>
 </div>
 </div>
+</div>
+</div>
+<div style="text-align:right;margin: 0 auto;">
+<font size="2">(Liiguta kursor slaidile et suurendada)</font>
+</div>
+<p>Koolituse teises pooles toimusid probleemikesksed arutelud väikestes rühmades ning lõpus kokkuvõttev ühine diskussioon. Välja pakutud 13 küsimusele vastuste leidmiseks moodustati kolmel koolitusel kokku 21 gruppi, mis omakorda keskendusid üldjuhul 1-2 küsimuse lahendamisele. Tekkinud vastukaja, ideed ja probleemid paluti ka kirja panna; kokku kogunes 40 vastust.</p>
 <p>Sellest saavad kõik hästi aru, et tehisintellekti-põhiseid kirjutamistööriistu piirata, keelata ega lõplikult kontrollida sisuliselt pole võimalik (kui, siis ainult paberi ja pliiatsiga eksamitel, kus eksaminandidel pole käepärast ühtegi elektroonilist seadet, sh nutikelli). Korduvalt tõstatus aga küsimus, kas selline piiramine üldse ongi vajalik. Pigem nähakse neid kui uusi potentsiaalselt kasulikke tööriistu, mida peaks nii tudengeid kui õppejõude õpetama mõistlikult ja sihipäraselt kasutama (kuivõrd neid juba kasutatakse nagunii). Samas on erinevaid arvamusi (“ChatGPT pole plagiaat, aga pettus” kirjutati nt ühes vastuses).</p>
 <p>Mitmed ülikooli töötajad ütlesid, et nad ise juba kasutavad ChatGPT’d, sealhulgas mainiti teadusartiklite kirjutamist, programmeerimist, ning õppematerjalide ja dokumentide ettevalmistamist. Oluline on siin muidugi see, et see ei tähenda, et neid kirjatöid masinal lastakse otsast lõpuni kirjutada; küll aga saab ChatGPT’d kasutada erinevatel praktilistel eesmärkidel, sh ümbersõnastamine, grammatikakontroll, ja ka näiteks erinevate ülesannete põhjade genereerimiseks (mis tuleb muidugi endal üle kontrollida).</p>
 </section>
@@ -189,7 +215,7 @@ p {
 </div>
 <div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
 <div class="cell-output-display">
-<p><img src="chatgpt_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="864"></p>
+<p><img src="chatgpt_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="864"></p>
 </div>
 </div>
 </div>
@@ -210,7 +236,7 @@ p {
 </div>
 <div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
 <div class="cell-output-display">
-<p><img src="chatgpt_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="864"></p>
+<p><img src="chatgpt_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="864"></p>
 </div>
 </div>
 </div>
@@ -246,7 +272,7 @@ p {
 </div>
 <div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
 <div class="cell-output-display">
-<p><img src="chatgpt_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="864"></p>
+<p><img src="chatgpt_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="864"></p>
 </div>
 </div>
 </div>
@@ -254,6 +280,85 @@ p {
 <p><br></p>
 <hr>
 <p>Kui enne polnud mahti seda väikest küsimustikku täita, palume siiski seda nüüd teha, see võtab ainult paar minutit: <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a></p>
+<p><br></p>
+<hr>
+</section>
+<section id="koolituse-slaide" class="level1">
+<h1>Koolituse slaide</h1>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="1.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="2.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="3.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="3.1.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="4.1.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="4.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="5.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="6.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+<div class="cell zoom quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="zoom">
+<div class="cell-output-display">
+<p><img src="6.1.png" class="img-fluid" width="1920"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="text-align:right;margin: 0 auto;">
+<font size="2">(Liiguta kursor slaidile et suurendada)</font>
+</div>
 
 
 </section>
