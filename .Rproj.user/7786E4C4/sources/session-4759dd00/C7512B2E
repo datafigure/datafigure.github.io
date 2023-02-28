@@ -1,27 +1,27 @@
 {
-    "id": "4BCA8FB7",
-    "path": "~/GitHub/datafigure.github.io/consulting.qmd",
-    "project_path": "consulting.qmd",
+    "id": "C7512B2E",
+    "path": "~/GitHub/andreskarjus.github.io/cudan/paperplots.qmd",
+    "project_path": null,
     "type": "quarto_markdown",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1676818957080.0,
+    "created": 1677599617189.0,
     "source_on_save": false,
-    "relative_order": 3,
+    "relative_order": 5,
     "properties": {
-        "tempName": "Untitled1",
+        "rmdVisualMode": "false",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "13,0",
-        "scrollLine": "0"
+        "cursorPosition": "43,0",
+        "scrollLine": "37"
     },
     "folds": "",
-    "lastKnownWriteTime": 1676883992,
+    "lastKnownWriteTime": 1677000123,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1676883992,
+    "last_content_update": 1677000123,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -589,6 +589,17 @@ library(chromote)
 library(stringi)
 library(jsonlite)
 
+# test
+
+for(i in sample(1:nrow(stims2))[1:20] ){paste(stims$sentence[i], "\n", stims$sentence[i+1]) %>% print(quote=F)}
+
+for(i in 1:20){
+  w=sample(stims2$targetword, 1)
+  stims2 %>% filter(targetword==w) %>% sample_n(2) %>% pull(sentence) %>% paste(collapse="\n") %>% cat
+  cat("\n\n")
+  
+}
+
 # x=stims$sentence[order(nchar(stims$sentence%>% gsub("<[^>]+>", " ",.)), decreasing = T)[2]]  %>% gsub("<[^>]+>", " ",.)
 
 # 20 * 3 paari. 

@@ -1,0 +1,971 @@
+
+
+source("C:/Users/Andres/Dropbox/cudan/publicvalue/cinando/festival_scripts.R")
+examplefests = c("Festival de Cannes", "Sundance", "Hot Docs Festival", "Sitges FF", "Busan IFF", "BAFICI")
+
+
+
+# IDEE: diversity graafidele datapointid ka peale, ja need saaks värvida sama värvi mis suur graaf. VÕI teha väiksed stacked bar chartid.
+
+# VEEL: mini-umapid kus suuremate festivalide liikumine peal.
+
+
+
+
+
+
+# metadata definition of genre, but we use latent space, inferred.
+
+# pub value is subjective, depends what you need/want. not private value, as not money.
+# analogue: films measured in box office only, but other measures of popularity. here we provide festival diversity, but could measure other aspects of value. 
+
+# veel üks violin: filmide keskmine pikkus festivalil.
+
+
+# pmst saaks öelda, mille järgi festivalid klasterduvad kõige rohkem, kas koha, koht-vs-festivalikoht, keele või zanri järgi, ja/või mis klasterduvad mille järgi rohkem. Kas mingi random networkiga võrdlemine, või üritada ennustada linke festivalide vahel.
+# kas sama saaks teha, kui oleks hoopis filmide network ja festivalid on klastrid? siis oleks see et palju neil overlap on, et kas seda ennustab filmi see või teine meta.
+
+
+# genre space: "All genre tags occur once per film entry, so the diagonal of the co-occurrence matrix is 0. We populate it with the frequencies of the tags - this becomes informative for genres like "drama" which often occur just by themselves."
+
+# for abstract "This research paves way for a more general "event science"
+# peaks viitama seda evans embed everything artiklit. ise ka kõik kokku + pca nt?
+
+# event2vec juba on, aga jadade peal: Event2vec: Learning Representations of Events on Temporal Sequences
+# "festival2vec" analoogina lihtsalt tekstis, et oleks ära kasutatud?
+# Film2Vec – A Feature-based Film Distributed Representation for Rating Prediction aga mingis poolkahtlases vietnami repositooriumis lihtsalt.
+# Cold-Start Representation Learning: A Recommendation Approach with Bert4Movie and Movie2Vec - ma pmst ei saa aru mis neil vektorites on, sest tagid pole, ja video jätavad välja, samas ainult audio ei saa ju olla; aga saab viidata et filmid-vektoriks on kasutatud recommenderites.
+
+# Peaks viitama või võibolla proovima: Betweenness and diversity in journal citation networks as measures of interdisciplinarity https://link.springer.com/article/10.1007/s11192-017-2528-2
+
+# ! for ecosystem stuff, limit 2014:2021
+# festivals as genre vecs means or means of film genre means
+
+# --make new plot with discrete distributions for illustration
+
+# other similar events: cultural, literary, art, music, food, sports competitions?
+
+# somewhere compare betweenness and metadata-diversity as 2 correlating diversity measures.
+# should say we use undirected degree, as no proper date data.
+
+# should network stats use weighted variants? e.g. weigthed degree / strength and betweenness?
+
+
+
+
+# might be possible to do festival directed network/flows, if can get the date more or less, easy if year difference, exclude or count as both in/out if same year (or probabilistic if target date known, prob to be earlier or later given remaining days in a year). clean the 400, use the 4000 as in/out (clean minimally to exclude duplicate films within festivals... then again if film with one refID in one, with another in other, if removing by title_year then could sever link). so maybe try to keep links while removing duplicates, go link by link?
+
+# Festival-film list - for festival events, use the new IDs: EventID_VZ; 
+# FilmCountry file listing origin countries for films, to be linked via refFilm
+# FilmGenre file listing genres for films, to be linked via refFilm
+# FilmLanguage file listing languages for films, to be linked via refFilm
+
+
+# fesfilm = fesfilm %>% filter(!is.na(idFestival_NEW))
+tmp=read_excel("C:/Users/Andres/korpused/publicvalue/cinando/festivals/Additional festoval info_nov21.xlsx", na = "NA") %>% mutate(EventID_VZ=as.character(EventID_VZ)) # ; any(duplicated(tmp$EventID_VZ))
+fesfilm=read_excel("C:/Users/Andres/korpused/publicvalue/cinando/festivals_june2022/Festival-film list.xlsx", na = "NA") %>%  # excel import needs explicit NA definition!!!
+  mutate(EventID_VZ=as.character(EventID_VZ), refFilm=as.character(refFilm)) %>% 
+  filter(EventID_VZ %in% intersect(EventID_VZ, tmp$EventID_VZ)) %>% 
+  select(EventID_VZ, setdiff(colnames(.), colnames(tmp)) ) %>% left_join(tmp, by="EventID_VZ") %>% 
+  group_by(LibelleEvent_NEW_VZ) %>% 
+  mutate(EventID_VZ=EventID_VZ[1]) %>% ungroup()  # fixes the split sitges and sansebastian entries
+
+filmgen=read_delim("C:/Users/Andres/korpused/publicvalue/cinando/festivals_june2022/FilmGenre.csv") %>%  mutate(refFilm=as.character(refFilm))  
+filmcountry=read_delim("C:/Users/Andres/korpused/publicvalue/cinando/festivals_june2022/FilmCountry.csv") %>% rename(txtKind=txtCountry) %>%  # easier if same column name down the line
+  mutate(refFilm=as.character(refFilm))  
+filmlang=read_delim("C:/Users/Andres/korpused/publicvalue/cinando/festivals_june2022/FilmLanguage.csv")%>% rename(txtKind=txtLanguage) %>% 
+  mutate(refFilm=as.character(refFilm))  %>% 
+  mutate(txtKind=       # homogenize country-variants for languages
+           gsub("(SPANISH|ENGLISH|FRENCH)-.*", "\\1",txtKind) %>%  
+           gsub("(BRAZILIAN|SWISS)-", "",.))
+tmpnames = read_delim("C:/Users/Andres/korpused/publicvalue/cinando/extranames.txt", col_names = c("xname", "txtKind")) %>% mutate(xname=tolower(xname))
+namesgender = read_delim("C:/Users/Andres/korpused/publicvalue/cinando/NamesOut.txt", col_names = c("xname", "txtKind")) %>% mutate(xname=tolower(xname)) %>% filter(txtKind %in% c("M", "F")) %>%
+  filter(!(xname %in% tmpnames$xname)) %>% 
+  rbind(tmpnames)
+#  198391 without unknown/unisex ones
+# namesgender$FirstName %>% duplicated %>% any
+
+filmcrews = read_delim("C:/Users/Andres/korpused/publicvalue/cinando/dump3/dbo.FilmCrew.csv")
+filmrole = read_delim("C:/Users/Andres/korpused/publicvalue/cinando/dump3/dbo.idxGeneric.csv") %>%
+  mutate(refFilm=as.character(refFilm)) %>% filter(txtType %in% c("Producer","Director")) %>% 
+  rename(cFilmCrew=refFilmCrew) %>% select(refFilm, cFilmCrew, txtType) %>% 
+  left_join(filmcrews,by="cFilmCrew") %>% 
+  mutate(xname=tolower(FirstName)) %>% 
+  filter(!is.na(xname), 
+         !(xname %in% c("null", "", " ", "na", "test")),
+         !grepl("^[[:punct:][:space:]]+$", xname),
+         nchar(xname)>1) %>%  # invalid entries
+  mutate(xname=gsub("( de la| von| de| la| van der| van den| van| ter)($| )", "\\2", 
+                        xname)) %>% 
+  separate(xname, sep="[[:space:][:punct:]]+", remove=F, into=c("f2", "f3", "f4")) %>% # throws pieces warning, but that's ok
+  mutate(xname=case_when(
+    xname %in%  namesgender$xname ~ xname, # try if one of the names matches
+    f2 %in% namesgender$xname ~ f2,
+    f3 %in% namesgender$xname ~ f3,
+    f4 %in% namesgender$xname ~ f4
+    )) %>% 
+  select(-f2,-f3,-f4) %>% 
+  left_join(namesgender, by="xname") %>% 
+  mutate(txtKind=case_when(is.na(txtKind)~"other", T~txtKind)); nrow(filmrole)  #  594094
+rm(filmcrews)
+
+
+#filmgen = filmgen %>% filter(txtKind %in% {table(filmgen$txtKind) %>% .[.>900 & names(.)!="unknown"] %>% names}) 
+#filmcountry = filmcountry %>% filter(txtCountry %in% {table(filmcountry$txtCountry) %>% .[.>50 & names(.)!="unknown"] %>% names})
+#filmlang = filmlang %>% filter(txtLanguage %in% {table(filmlang$txtLanguage) %>% .[.>50 & names(.)!="unknown"] %>% names})
+
+fesfilm2 = fesfilm %>%
+  filter( is.na(lstTypeEvent) | lstTypeEvent=="Festival"  ) %>% # exclude markets
+  rename(ab = `A/B fest`) %>%    # rename the variable with space
+  mutate(EventID_VZ=as.character(EventID_VZ),
+         idFestival_NEW=as.character(idFestival_NEW)) %>% 
+  filter(!(LibelleEvent_NEW_VZ %in% 
+             c("kino_Academy_2013", # doesn't have any metadata for films; no location for kino Academy 2014?
+               "kino_Academy_2014",  # broken metadata
+               "Next_VR_2017",        # section of cannes, more like a market
+               "Demo_2019", "test_2014", # various database test objects
+               "Test_Cinando_2020",
+               "Test_festival_2014",
+               "Festitval_Test_Cinando_2017", 
+               "Eventival_demo_2021"
+               )),
+         !(libelleFestival_NEW_VZ %in% 
+             c("Smallisbiutiful",    # not separate festival, unclear host; 
+               "RDV UniFrance"     # more like a market
+               )) 
+         ) %>% 
+  #group_by(EventID_VZ) %>% filter(n()>=15) %>% ungroup() %>%  # 15 film limit - but not applied here, as still has duplicates; which are removed below differently per each analysis, to keep the most informative entry of each film, depending on variable of interest
+  left_join(filmcountry %>% 
+              filter(!(txtKind %in% c("Unknown", "unknown"))) %>% 
+              count(refFilm,name ="ncountries"), by="refFilm") %>% 
+  left_join(filmgen %>% 
+              filter(!(txtKind %in% c("Unknown", "unknown"))) %>% # remove unknowns (basically NAs)
+              count(refFilm,name ="ngens"), by="refFilm") %>% 
+  left_join(filmlang %>% 
+              filter(!(txtKind %in% c("Unknown", "unknown"))) %>% 
+              count(refFilm,name ="nlangs"), by="refFilm") %>% 
+  left_join( filmrole %>% filter(txtKind %in% c("F", "M")) %>% 
+              group_by(refFilm, txtType) %>% 
+              summarize(nroles=100+n()) %>%   # weigh so having both prod & dir is better than 4 dirs
+              group_by(refFilm) %>% summarise(nroles=sum(nroles, na.rm=T))
+            , by="refFilm") %>% 
+  mutate(ncountries=replace_na(ncountries, 0),
+         ngens=replace_na(ngens, 0),
+         nlangs=replace_na(nlangs, 0),
+         nroles=replace_na(nroles, 0)
+         )
+
+paste(fesfilm2$EventID_VZ %>% unique %>% length, "festivals,", fesfilm2$refFilm %>% unique %>% length , "unique films,", nrow(fesfilm2), "festival-film pairs, pre filters")      # 629 festivals, 60618 unique film ids, 95085 festival-film pairs, pre filters; but that's after already taking out a bunch in previous step.
+
+
+#### gender diversity ####
+
+festrolevecs = dofestvecs(fesfilm2, metatype="role", sortvar="nroles", 
+                           lat=NULL, filmkinds=filmrole, minfilms=15) 
+
+
+
+
+#### film and festival genre vecs ####
+
+genlat = dolatentspaces(metatype="genre", filmgen=filmgen)
+festgenrevecs = dofestvecs(fesfilm2, metatype="genre", sortvar="ngens", 
+                           lat=genlat, filmkinds=filmgen, minfilms=15) 
+# 25833 unique films, 576 unique fests, 35118 film*fest pairs, after final filter.
+
+# umap common space for genre example
+ugenre = dogenrecommonspace(festgenrevecs, attr(festgenrevecs, "filmfestvecs")) %>% doUMAP()
+
+genrechangevals = dogenrechangevals(attr(festgenrevecs, "filmfestvecs"), festgenrevecs, minevents=11)
+
+# write_csv(filmfestvecs %>% group_by(tmp) %>% mutate(n=n()) %>% ungroup %>% filter(!duplicated(tmp)) %>% select(refFilm, TitleVA,YearOfProduction, firstkind, Duration, n) %>% arrange(-n), "filmsingenrespace.csv")
+
+# musicals
+#attr(festgenrevecs, "filmfestvecs") %>% filter(firstfilmkind=="Musical") %>%  left_join(filmgen %>% group_by(refFilm) %>% arrange(NoOrder, .by_group=T) %>% summarise(allgenres=paste0(txtKind, collapse=", ")), by="refFilm") %>% write_csv("musicals.csv")
+
+                       
+
+
+## Year difference
+yeardiffvals = fesfilm2 %>% 
+  filter(YearOfProduction>1900,YearOfProduction<=2023, YearEvent>2007, YearEvent<2022) %>% 
+  mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+  group_by(EventID_VZ) %>%   # for duplicate film removal
+  arrange(is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+  filter(!duplicated(tmp)) %>% 
+  group_by(EventID_VZ) %>% mutate(nf=n()) %>%  filter(n()>=15) %>% ungroup() %>% 
+  mutate(yeardif=YearOfProduction-YearEvent) %>% 
+  group_by(EventID_VZ) %>% 
+  mutate(yearsd=sd(yeardif,na.rm=T),yearmean=mean(yeardif,na.rm=T)) %>% 
+  summarise(across(everything(), first)) %>% 
+  ungroup() %>% 
+  mutate(tool=paste0(LibelleEvent_NEW_VZ, 
+                     ": mean dif to prod year=", round(yearmean,2), 
+                     " sd=",round(yearsd,2), " nfilms=",nf))
+dim(yeardiffvals)
+
+
+
+
+#### latent countries ####
+
+geolat = dolatentspaces(metatype="geo", filmgen=NULL)
+festcountryvecs = dofestvecs(fesfilm2, metatype="geo", sortvar="ncountries", 
+                           lat=geolat, filmkinds=filmcountry, minfilms=15, 
+                           fixes = countryfixes, 
+                           customlabs = c("usa", "united kingdom",   
+                                          "france",  
+                                          "argentina",  "spain", 
+                                          "germany", 
+                                          "japan",
+                                          "other" ) ) 
+# "27063 unique films, 584 unique fests, 53137 film*fest pairs, after final filter"
+
+
+
+ 
+
+
+#### latent language space ####
+
+langlat = dolatentspaces(metatype="lang", filmgen=NULL)
+festlangvecs = dofestvecs(fesfilm2, metatype="lang", sortvar="nlangs", 
+                             lat=langlat, filmkinds=filmlang, minfilms=15, 
+                          fixes = langfixes,
+                          customlabs = 
+                          c("english",  "french",  "spanish", "german", "japanese", "other"))
+ulang = doUMAP(festlangvecs)
+# "24727 unique films, 547 unique fests, 43187 film*fest pairs, after final filter"
+
+# get map
+mp = joinCountryData2Map(countryExData, joinCode = "ISO3", nameJoinColumn = "ISO3V10", mapResolution = "low") %>% fortify()
+
+
+#### save plots data ####
+save(mp, fesfilm2, festlangvecs,ulang, langlat,  festcountryvecs,geolat,  festgenrevecs, ugenre,genlat, genrechangevals,yeardiffvals,festrolevecs, file="C:/Users/Andres/korpused/publicvalue/cinando/cinandospaces.RData")
+
+
+
+# example of decrease:
+# datlang %>% left_join(filmlang2, by="refFilm") %>% filter(LibelleEvent_NEW_VZ=="BAFICI_2013") %>% pull(txtKind) %>% table() %>% sort
+# # vs
+# datlang %>% left_join(filmlang2, by="refFilm") %>% filter(LibelleEvent_NEW_VZ=="BAFICI_2021") %>% pull(txtKind) %>% table() %>% sort
+
+
+
+
+
+
+
+
+
+
+#### ................................... ####
+# Possible:
+#### relative spaces  ###
+# year to event year
+
+
+
+
+#### festival network ####
+
+# object for festivals networks, global deduplication
+fesfilm3 = fesfilm2 %>% 
+  filter(!is.na(TitleVA)) %>% 
+  mutate(filmyear=paste0(TitleVA, "_", YearOfProduction)) %>%
+  group_by(EventID_VZ) %>% filter(!duplicated(filmyear)) %>% 
+  group_by(EventID_VZ) %>% filter(n()>=15) %>% ungroup()  # apply same min filter as above
+
+
+# fesfilm3 %>% select(EventID_VZ, filmyear) %>% group_by(EventID_VZ, filmyear) %>% count() %>% arrange(-n)
+
+
+#write_excel_csv(fesfilm3, "Festival-film_deduplicated_refFilm_NAdurations.csv")
+
+ffmat = fesfilm3 %>% select(EventID_VZ, filmyear) %>% mutate(tmp=1) %>% 
+  pivot_wider(values_from=tmp, values_fill = 0, id_cols = "filmyear", names_from = "EventID_VZ") %>% 
+  column_to_rownames("filmyear") %>% as.matrix() %>% 
+  as.dfm() %>% fcm()
+all((ffmat %>% as.matrix() %>% diag)==0)
+dim(ffmat) # 643
+edgelist = reshape2::melt(ffmat %>% as.matrix()) %>% 
+  .[.[,3]>0,] # remove 0-weight links (ie no link, byproduct of the fcm)
+colnames(edgelist)=c("from", "to", "weight")
+edgelist = edgelist %>%   mutate(to=as.character(to), from=as.character(from)) 
+dim(edgelist)  #  14420 
+rownames(edgelist)=NULL
+
+e2 = edgelist %>%  
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% 
+              mutate(tolibelle=paste0(YearEvent," ", libelleFestival_NEW_VZ)) %>% 
+              rename(to=EventID_VZ, toyear=YearEvent) %>%
+              select(to, toyear, tolibelle), by="to" ) %>% 
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% 
+              mutate(fromlibelle=paste0(YearEvent," ", libelleFestival_NEW_VZ)) %>% 
+              rename(from=EventID_VZ, fromyear=YearEvent) %>% 
+              select(from, fromyear, fromlibelle), by="from" ) %>% 
+  mutate(dist=abs(toyear-fromyear), coloryear = pmax(toyear, fromyear)) 
+# the long distance ones are retrospective type events
+# Busan_IFF_2021 and Festival_de_Cannes_2021 show some old stuff (even 1934-55), so have links with earlier festivals which have done the same
+#fesfilm3 %>% group_by(refFilmAK) %>% filter("200" %in% EventID_VZ &   "94" %in% EventID_VZ) %>% select(LibelleEvent_NEW, TitleVA, YearOfProduction) %>% arrange(YearOfProduction) # busan2021 and toronto2011 show a 2011 film, creates link.
+# e2 %>% arrange(-dist)
+
+heatmaplist = ffmat %>% as.matrix() %>% 
+  {.[lower.tri(., diag = F)]=t(.)[lower.tri(., diag = F)];.} %>% 
+  {diag(.)=NA;.} %>% 
+  reshape2::melt() %>% {colnames(.)=c("from", "to", "weight");.} %>% 
+  mutate(to=as.character(to), from=as.character(from), weight=na_if(weight, 0)) %>% 
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% 
+              mutate(tolibelle=paste0(YearEvent," ", libelleFestival_NEW_VZ)) %>% 
+              rename(to=EventID_VZ, toyear=YearEvent) %>%
+              select(to, toyear, tolibelle), by="to" ) %>% 
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% 
+              mutate(fromlibelle=paste0(YearEvent," ", libelleFestival_NEW_VZ)) %>% 
+              rename(from=EventID_VZ, fromyear=YearEvent) %>% 
+              select(from, fromyear, fromlibelle), by="from" ) %>% 
+  mutate(dist=abs(toyear-fromyear), coloryear = pmax(toyear, fromyear)) 
+
+utmp = fesfilm3 %>% select(EventID_VZ, filmyear) %>% mutate(tmp=1) %>% 
+  pivot_wider(values_from=tmp, values_fill = 0, names_from = "filmyear", id_cols = "EventID_VZ") %>% 
+  column_to_rownames("EventID_VZ") 
+u = utmp %>% as.matrix() %>% umap(config = umap.defaults %>% {.$n_components=1;.}, 
+                                  method="umap-learn") %>% .$layout
+u = data.frame(y=u[,1], EventID_VZ=rownames(utmp))
+
+
+nodelist = fesfilm3 %>% 
+  mutate(EventID_VZ==fct_inorder(EventID_VZ)) %>%  
+  group_by(EventID_VZ) %>% 
+  summarise(nf=n(), YearEvent=mean(YearEvent, na.rm=T), 
+            LibelleEvent_NEW_VZ=LibelleEvent_NEW_VZ[1],
+            libelleFestival_NEW_VZ = libelleFestival_NEW_VZ[1],
+            ab=ab[1])  %>% 
+  left_join(u, by="EventID_VZ") %>% 
+  mutate(x=YearEvent+runif(nrow(.), -0.2, 0.2)) 
+d=degree(graph_from_data_frame(e2, directed = F, vertices = nodelist)) # all(nodelist$EventID_VZ==names(d))
+# b=betweenness(graph_from_data_frame(e2, directed = F, vertices = nodelist))
+s=strength(graph_from_data_frame(e2, directed = F, vertices = nodelist) )
+nodelist=nodelist %>% 
+  mutate(degree=d[.$EventID_VZ]) %>% 
+  #mutate(ndegree=degree/nf) %>% 
+  mutate(lndegree=degree/log10(nf)) %>% 
+  mutate(#betweenness=b, nbetweenness = b[.$EventID_VZ]/nf, 
+         strength=s[.$EventID_VZ], nstrength=s[.$EventID_VZ]/log10(nf))  %>% 
+  mutate(tool=paste0(LibelleEvent_NEW_VZ,"\n nfilms=", nf, " degree=",degree, " lognormdegree=",round(lndegree,2), " strength=",round(strength,2), " lognormstrength=",round(nstrength,2) ))
+
+attr(nodelist, "info") =
+paste(fesfilm3$EventID_VZ %>% unique %>% length, "festivals,", 
+      fesfilm3 %>% group_by(libelleFestival_NEW_VZ) %>% filter(n()>1) %>% pull(libelleFestival_NEW_VZ) %>% unique %>% length, "series with 2+ events",
+      fesfilm3$refFilm %>% unique %>% length , "unique films,", nrow(fesfilm3), "festival-film pairs")  # 
+
+
+
+library(visNetwork)
+
+# leaving out the few unconnected festivals for better layout
+visn = visNetwork(nodes=nodelist %>% 
+             mutate(id=EventID_VZ) %>% 
+             filter(id %in% e2$from | id %in% e2$to) %>% 
+             mutate(title=tool %>% gsub(" ", "<br>",.)) %>% 
+             mutate(color=case_when(ab=="A"~"#3B99B1", T~ "#E9B31F")) %>% 
+             mutate(size=(nf)/12+6)
+           , 
+           edges=e2 %>% mutate(width=weight*0.01)) %>% 
+  visIgraphLayout(layout = "layout_with_kk", physics = F, smooth = F) %>% 
+  visNodes(borderWidth=0, opacity = 0.9 ) %>% 
+  visEdges(color=list(color=alpha("gray85", 0.91), highlight="black" ) ) %>% 
+  visOptions(highlightNearest = list(enabled = TRUE, degree = 1,
+                                     labelOnly = FALSE, hover = F,
+                                     algorithm="all"),
+             nodesIdSelection = list(enabled=T, useLabels=T))
+
+
+
+# library(htmlwidgets)
+# saveWidget(visn, "visn.html", selfcontained = T, libdir = "lib")
+
+#### Predict linkage ####
+# 100 86 ? 
+links = heatmaplist %>% 
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% select(ab,EventID_VZ) %>% rename(to=EventID_VZ, abto=ab), by="to" ) %>% 
+  left_join(fesfilm3 %>% filter(!duplicated(EventID_VZ)) %>% select(ab,EventID_VZ) %>% rename(from=EventID_VZ, abfrom=ab), by="from" ) %>% 
+  mutate(class=case_when(
+    abto=="A" & abfrom == "A" ~ "_bothAA",
+    abto=="B" & abfrom == "B" ~ "_bothBB",
+    abto!=abfrom~"_ABdifferent")) %>% 
+  mutate(pair=paste(pmin(from, to), pmax(from,to))) %>%  
+  filter(!duplicated(pair), from!=to) %>% # need only 1 tri of the linkage map, and remove self
+  mutate(linked=case_when(is.na(weight)~"no", T~"yes") %>% as.factor) %>% 
+  select(pair, linked, dist, class, weight)
+
+doDistmats=function(vecs, metatype=NA, maxdist){
+  listmkr=function(xx, vecs){
+    y = xx %>% {dimnames(.)=list(vecs$EventID_VZ,vecs$EventID_VZ);.} %>% 
+      reshape2::melt() %>% 
+      mutate(Var1=as.character(Var1), Var2=as.character(Var2)) %>% 
+      mutate(pair=paste(pmin(Var1, Var2), pmax(Var1, Var2))) %>%  
+      filter(!duplicated(pair), Var1!=Var2) %>% 
+      select(pair, value) 
+    return(y)
+  }
+  if(metatype %in% c("lang", "genre")){
+    x = vecs %>% select(starts_with("V")) %>% as.matrix() %>% 
+      dist2(method="euclidean", norm="none") %>% {./maxdist}
+    xlist=listmkr(x, vecs) %>% rename({{metatype}}:=value)
+  }
+  if(metatype %in% c("geo")){
+    x = vecs %>% select(long, lat) %>% as.matrix() %>% distm() %>% {./1000/40008}
+    x2 = vecs %>% select(eventlong, eventlat) %>% as.matrix() %>% distm() %>% {./1000/40008}
+    x3 = vecs %>% pull(eventdist) %>% sapply(.,"-",.) %>% abs %>% {./40008}
+    xlist=cbind(
+      listmkr(x, vecs) %>% rename(geomean=value),
+      listmkr(x2, vecs) %>% rename(eventloc=value) %>% select(-pair),
+      listmkr(x3, vecs) %>% rename(eventfilmdist=value) %>% select(-pair)
+    )
+  }
+  return(xlist)
+}
+
+linkdat = left_join(
+  doDistmats(festgenrevecs, metatype="genre", attr(festgenrevecs, "maxdist")),
+  doDistmats(festlangvecs, metatype="lang", attr(festlangvecs, "maxdist")),  by="pair") %>% 
+  left_join(doDistmats(festcountryvecs, metatype="geo"), by="pair") %>% 
+  left_join(links, by="pair") %>% 
+  rename(timedist=dist)
+dim(linkdat) # 165600
+table(linkdat$linked)
+head(linkdat)
+
+m = glm(linked~timedist+class+genre+lang+geomean+eventloc+eventfilmdist,family = "binomial", 
+        data=linkdat %>% select(-weight) %>% {.[complete.cases(.),]} )
+
+m = lm(log(weight)~timedist+class+genre+lang+geomean+eventloc+eventfilmdist, 
+        data=linkdat %>% filter(!is.na(weight), weight>1, weight<40) %>% {.[complete.cases(.),]} )
+
+
+summary(m)
+
+
+
+# heatmaplist$dist %>% hist # lognormal, is fine. closer festivals are more likely to be linked, good control var - but 0 year is lower than 1! need a poly or gam?
+
+
+
+#### save plots data ####
+save(nodelist,e2,heatmaplist,visn,linkdat, file="C:/Users/Andres/korpused/publicvalue/cinando/cinandonetworks.RData")
+
+
+
+
+
+
+
+
+
+
+
+# ........................... ####
+
+
+
+#### degree vs n films problem ####
+library(patchwork)
+x = data.frame(degree=degree(graph_from_data_frame(e2, directed = F, vertices = nodelist))  , 
+               betweenness=betweenness(graph_from_data_frame(e2, directed = F, vertices = nodelist)),
+               hd = harmonic_centrality(graph_from_data_frame(e2, directed = F, vertices = nodelist)),
+               clos = closeness(graph_from_data_frame(e2, directed = F, vertices = nodelist)),
+               nfilms=nodelist$nf, ab=nodelist$ab) %>% 
+  mutate(ndegree=degree/(nfilms)) %>% 
+  mutate(lndegree=degree/log10(nfilms),
+         lnbetweenness=betweenness/log10(nfilms)
+  )
+
+ggplot(x , aes(lndegree, nfilms))+
+  geom_point()+
+  scale_y_log10()+
+  geom_smooth(method="lm")+
+  ggplot(x , aes(lnbetweenness, nfilms))+
+  geom_point()+
+  scale_y_log10()+
+  geom_smooth(method="lm")
+
+ggplot(x , aes(degree, lndegree, size=nfilms,color=ab))+
+  geom_point()+
+  #scale_y_log10()+
+  geom_smooth(method="lm", size=1, color="black")+
+  theme(legend.position = "none")+
+  ggplot(x , aes(betweenness, lnbetweenness, size=nfilms,color=ab))+
+  geom_point()+
+  #scale_y_log10()+
+  geom_smooth(method="lm", size=1, color="black")+
+  theme(legend.position = "none")
+
+nodelist %>% filter(betweenness>8000) %>% select(EventID_VZ, LibelleEvent_NEW_VZ, nf, degree, betweenness)
+
+distances(graph_from_data_frame(e2, directed = F, vertices = nodelist)) 
+shortest_paths(graph_from_data_frame(e2, directed = F, vertices = nodelist)) 
+
+
+
+
+
+
+
+
+##### networks stats ####
+
+# degree
+# density - some quote in paper (links/possible links) or just degree, basically same if within year (but not sure if should do within year). again just normalize and cut edges.
+
+
+
+
+
+# network
+gn={ggplot(nodelist, aes(x, y,color=year,size=nf, text=tool))+
+    geom_point( shape=21, alpha=0.9) + 
+    scale_x_continuous(breaks=2009:2021)+
+    scale_color_viridis(end=0.9)+
+    scale_size( range=c(0.5*2, 1.5*3))+
+    theme_void()+
+    theme(legend.position = 'none', axis.text.x=element_text(),
+          plot.background = element_rect(color="white", fill="white")
+    )} %>% ggplotly(tooltip="text")
+
+# net stats
+gnn = {ggplot(nodelist,
+              aes(year, ndegree,fill=ab,size=nf, text=tool))+
+    geom_beeswarm( color="white", shape=21, alpha=0.9, cex=1, priority = "random") +
+    geom_line(aes(year, ndegree), data=nodelist %>% group_by(year) %>% summarise(ndegree=mean(ndegree)), inherit.aes = F)+
+    scale_x_continuous(breaks=2009:2021)+
+    scale_color_viridis(end=0.9)+
+    scale_size( range=c(0.5*2.2, 1.5*3.2), guide = "none")+
+    theme_bw()+
+    theme(#legend.position = 'none', 
+      panel.border = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      plot.background = element_rect(color="white", fill="white")
+    )+
+    labs(x="")} %>% ggplotly(tooltip="text")
+
+
+gfv={ggplot(festvecs %>% mutate(tool=paste0(LibelleEvent_NEW_VZ, ", indiv=", round(indiv,2)," n=", nf )) , 
+            aes(YearEvent, indiv,fill=ab, size=nf, text=tool))+
+    geom_beeswarm( color="white", shape=21, alpha=0.9, cex=0.9, priority = "random") +
+    geom_line(aes(YearEvent, indiv), data=festvecs %>% group_by(YearEvent) %>% summarise(indiv=mean(indiv,na.rm=T)), inherit.aes = F)+
+    scale_x_continuous(breaks=2009:2021)+
+    scale_color_viridis(end=0.9)+
+    scale_size( range=c(0.5*2.2, 1.5*3.2), guide = "none")+
+    theme_bw()+
+    theme(#legend.position = 'none', 
+      panel.border = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      plot.background = element_rect(color="white", fill="white")
+    )+
+    labs(x="")} %>% ggplotly(tooltip="text")
+
+# fmv = festvecs %>% group_by(YearEvent) %>% summarise(across(starts_with("V"), mean)) # yearly
+fmv = colMeans(festvecs %>% select(starts_with("V")))
+ecovecs = festvecs %>% select(-starts_with("V")) %>% cbind(exdiv = (abs((festvecs %>% select(starts_with("V"))) - fmv) %>% rowMeans()))
+
+
+gfe={ggplot(ecovecs %>% mutate(tool=paste0(LibelleEvent_NEW_VZ, ", exdiv=", round(exdiv,2)," n=", nf )) , 
+            aes(YearEvent, exdiv,fill=ab, size=nf, text=tool))+
+    geom_beeswarm( color="white", shape=21, alpha=0.9, cex=0.9, priority = "random") +
+    geom_line(aes(YearEvent, exdiv), data=ecovecs %>% group_by(YearEvent) %>% summarise(exdiv=mean(exdiv,na.rm=T)), inherit.aes = F)+
+    scale_x_continuous(breaks=2009:2021)+
+    scale_color_viridis(end=0.9)+
+    scale_size( range=c(0.5*2.2, 1.5*3.2), guide = "none")+
+    theme_bw()+
+    theme(#legend.position = 'none', 
+      panel.border = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      plot.background = element_rect(color="white", fill="white")
+    )+
+    labs(x="")} %>% ggplotly(tooltip="text")
+
+
+library(htmlwidgets)
+p=subplot(gn, gnn, gfv, gfe, nrows=4) %>% 
+  layout(annotations = list( 
+    list(x = 0 , y = 1, text = "Network (no links in the interactive one yet, sry)", showarrow = F, xref='paper', yref='paper'), 
+    list(x = 0 , y = 0.7, text = "Normalized degree; degree/n(films) [DON'T intepret first&last years!]", showarrow = F, xref='paper', yref='paper'),
+    list(x = 0 , y = 0.47, text = "Internal diversity", showarrow = F, xref='paper', yref='paper'),
+    list(x = 0 , y = 0.2, text = "External diversity [against grand mean, should do yearly]", showarrow = F, xref='paper', yref='paper')
+  ) 
+  ) 
+
+
+
+# saveWidget(p, "degree.diversity.html", selfcontained = T, libdir = "lib")
+
+
+# ex vs int
+fmv = colMeans(festvecs %>% select(starts_with("V")))
+ecovecs = festvecs %>% select(-starts_with("V")) %>% cbind(exdiv = (abs((festvecs %>% select(starts_with("V"))) - fmv) %>% rowMeans()))
+{ggplot(ecovecs %>% mutate(tool=paste0(LibelleEvent_NEW_VZ, ", div=", 
+                                       round(meansd,2), " exdiv=",
+                                       round(exdiv,2), " n=", nf )) , 
+        aes(exdiv, meansd,fill=ab, shape=ab, text=tool))+
+    geom_point( alpha=0.7,size=3, color="transparent") +
+    #scale_x_continuous(breaks=2009:2021)+
+    scale_shape_manual(values=c(16,15))+
+    #scale_size( range=c(0.5*2.2, 1.5*3.2), guide = "none")+
+    theme_bw()+
+    theme(#legend.position = 'none', 
+      panel.border = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      plot.background = element_rect(color="white", fill="white")
+    )+
+    labs(x="External genre diversity", y="Internal genre diversity")} %>% ggplotly(tooltip="text")
+
+
+
+# try facets. from 2014 only!! and add external as another facet panel.
+ggplot(festvecs %>% mutate(tool=paste0(LibelleEvent_NEW_VZ, ", div=", round(meansd,2)," n=", nf )) , 
+       aes(YearEvent, meansd,color=ab, shape=ab, text=tool, group=YearEvent))+
+  geom_beeswarm(alpha=0.9, priority = "random") +
+  # geom_line(aes(YearEvent, meansd), 
+  #           data=festvecs %>% group_by(YearEvent) %>% summarise(meansd=mean(meansd,na.rm=T)), inherit.aes = F)+
+  stat_summary( color="black", shape="-", size=1)+
+  scale_x_continuous(breaks=2009:2021)+
+  scale_shape_manual(values=c(16,15))+
+  theme_bw()+
+  theme(legend.position = 'none', 
+        #panel.border = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.background = element_rect(color="white", fill="white")
+  )+
+  labs(x="", y="internal genre diversity")+
+  facet_wrap(~ab)
+
+
+
+
+# degree vs centrality
+ggplot(nodelist, aes(nstrength, ndegree, color=nf, shape=ab))+
+  geom_point()+
+  scale_shape_manual(values=c(16,15))+
+  scale_color_viridis(trans="log10")
+ggplot(nodelist, aes(strength, degree, color=nf, shape=ab))+
+  geom_point()+
+  scale_shape_manual(values=c(16,15))+
+  scale_color_viridis(trans="log10")
+
+
+
+
+
+
+
+
+
+#### dates and flows --> won't work ###                 
+# x = read_csv("C:/Users/Andres/Downloads/dbo.Event.csv")
+# x %>% filter() %>% sample_n(10) %>% select(LibelleEvent, Year, DateDebut,DATECREATION) %>% mutate(DateDebut=as.Date(DateDebut, "%m/%d/%Y"),DATECREATION= as.Date(DATECREATION, "%m/%d/%Y"))
+# fesfilm3 %>%  idFestival_NEW 
+# setdiff(fesfilm3$refEvent, x$cEvent)
+# wont' work: old file has half missing, new file where present it seems most is last day of year, not exact.
+
+
+
+
+
+
+
+
+
+#### first count umaps ####
+
+dodat = function(fesfilm2, nx, filmx,mincat=900,minleg=5, filmx2=NULL, nx2=NULL){
+  xlist=list(filmx, filmx2)
+  nlist=list(nx, nx2)
+  rm(nx,nx2,filmx,filmx2)
+  
+  ulist=list()
+  for(i in 1:2){
+    if(!is.null(xlist[[i]])){
+      dat = fesfilm2 %>% 
+        rename(nsort=nlist[[i]]) %>% # because var passing {{}} syntax is wonky
+        group_by(EventID_VZ) %>%   # for duplicate film removal
+        arrange(desc(nsort), is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+        #----------------------------------------------------- is the sort-remove ok???? nov18
+        mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+        filter(!duplicated(tmp)) %>%  # remove duplicate films within event (works, w ungroup fewer rows)
+        group_by(EventID_VZ) %>% filter(n()>=25) %>% ungroup()  # keep events with 25 or more films
+      
+      
+      nrow(dat) %>% print() # 49159 of 118973
+      unique(dat$EventID_VZ) %>% length %>% print
+      
+      xcat = dat %>% 
+        left_join(xlist[[i]], by="refFilm") %>%  # JOIN -----------------------> is that an ok join, filmgen has dupl??
+        filter(!is.na(txtKind)) %>%  #----------------------------> ?
+        group_by(EventID_VZ) %>% count(txtKind) %>% 
+        pivot_wider(values_from=n, names_from =txtKind, values_fill = 0) %>% 
+        column_to_rownames("EventID_VZ") %>% 
+        apply( 1, function(x) x/sum(x)) %>% t
+      # now remove the smaller categories, but the distributions are with original:
+      xcat2 = xcat[,{colnames(xcat) %in% 
+          {table(xlist[[i]]$txtKind) %>% 
+              .[.>=mincat[i] & names(.)!="unknown"] %>% names}}] 
+      dim(xcat) %>% print()
+      dim(xcat2) %>% print()
+      d = dist(xcat2, method = "euclidean") %>% as.matrix() 
+      
+      xlookup = dat %>% group_by(EventID_VZ) %>%  # replace with most freq in group in case some variation
+        mutate(LibelleEvent_NEW = names(table(LibelleEvent_NEW) %>% sort %>% tail(1)),
+               idFestival_NEW = names(table(idFestival_NEW, useNA = "ifany") %>% sort %>% tail(1))  ) %>% 
+        summarise(size=n(), 
+                  year=median(YearEvent,na.rm=T) %>% as.integer(),
+                  event = LibelleEvent_NEW[1],
+                  series = idFestival_NEW[1]
+        )
+      
+      uc=umap.defaults;uc$input="dist";uc$min_dist=0.8
+      if(!is.null(xlist[[2]])){ uc$n_components=1}
+      u = umap(d, config = uc)$layout %>% as.data.frame() %>% mutate(EventID_VZ = rownames(xcat))
+      u = u %>% 
+        left_join(xlookup, by="EventID_VZ") %>% 
+        mutate(
+          #  event = fesfilm2$LibelleEvent_NEW[match(u$EventID_VZ, fesfilm2$EventID_VZ)]
+          # ,series = fesfilm2$idFestival_NEW[match(u$EventID_VZ, fesfilm2$EventID_VZ)]
+          # ,year = fesfilm2$YearEvent[match(u$EventID_VZ, fesfilm2$EventID_VZ)]
+          topgenre = colnames(xcat2)[apply(xcat2,1, which.max)] # [,-which(colnames(xcat2)=="Drama")]
+          ,toplabs = apply(xcat,1, function(x){ 
+            paste0(colnames(xcat)[x>0][order(x[x>0],decreasing = T)[1:pmin(5, sum(x>0))]], " ", 
+                   sort(x[x>0],decreasing = T)[1:pmin(5, sum(x>0))] %>% round(2)) %>% 
+              paste0(collapse="\n")} )
+          ,toplabs=paste0(event, "\n",toplabs)
+        ) %>% 
+        group_by(topgenre) %>% mutate(topgenre=case_when(n()>=minleg[i]~topgenre, T~"(other)")) %>% 
+        group_by(series) %>%  
+        mutate(series2 = case_when(n()<2 | is.na(series) ~ NA_character_, T~as.character(series))) %>% 
+        mutate(series3 = case_when(n()>=10 & !is.na(series) ~ series2, T~NA_character_)) %>% 
+        mutate(series4 = case_when(n()>=10 & !is.na(series) ~ 2, T~1)) %>% 
+        ungroup() %>% 
+        arrange(year, EventID_VZ)
+      ulist[[i]]=u
+    }
+  }
+  if(!is.null(xlist[[2]])){
+    if(!all(ulist[[1]]$EventID_VZ == ulist[[2]]$EventID_VZ)){stop("mismatch")}
+    u2 = cbind(ulist[[1]] %>% 
+                 mutate(toplabs=paste0(toplabs, "\n---\n", 
+                                       ulist[[2]]$toplabs)), 
+               ulist[[2]]%>% rename(V2=V1) %>% select(V2))
+  } else {
+    u2=ulist[[1]]
+  }
+return(u2)
+}
+
+dobigplot=function(u, titl, labs=NULL){
+  g=ggplot(u, aes(x=V1, y = V2, color=topgenre, text=toplabs, size=(size+10)))+
+    geom_point(alpha=0.9)+
+    geom_text(aes(x=V1, y=V2, label=event), data=u %>% filter(!is.na(series)),hjust=0, alpha=0.6)+
+    #geom_line(data=u %>% filter(!is.na(series3)), alpha=0.3)+
+    #geom_point(data=u %>% filter(!is.na(series3)))+
+    scale_size(range=c(0.7,4), guide = "none")+
+    #coord_cartesian(expand=T, ylim = c(-3,4))+
+    scale_color_manual(values=c("gray", RColorBrewer::brewer.pal(8, "Set1")[-6],"gold" ))+
+    guides(colour = guide_legend(override.aes = list(size=3)))+
+    labs(color="", title=titl)+
+    theme_minimal()+
+    theme(legend.position = "right")+
+    theme(axis.title = element_blank(), axis.text = element_text(size=4))
+  if(!is.null(labs)){
+    g=g+theme(axis.title = element_text(size=10))+labs(x=labs[1], y=labs[2])
+    }
+  return(plotly::ggplotly(g, tooltip = "text", textposition = "right") )
+}
+
+domoveplot=function(u){
+  # movements
+  xseries = u %>% filter(!is.na(series3)) %>% pull(series) %>% unique()
+  u2=list()
+  for(i in xseries){
+    l = u %>% filter(series==i) %>% pull(event) %>% gsub("_[0-9]{4,4}$","",.) %>% 
+      gsub("_", " ", .) %>% 
+      table %>% sort %>% tail(1) %>% names() # assign most common event name as label
+    u2[[i]] = u %>% mutate(xser=l, target = case_when(series==i~T, T~F)) %>% 
+      mutate(year=case_when(target~year,T~NA_integer_))
+  }
+  u2=do.call(rbind, u2)
+    
+  g=ggplot(u2, aes(x=V1, y = V2, color=year,size=(size+10)))+
+    geom_path(data=u2 %>% filter(target), size=0.1, color="black")+
+    geom_point(aes(text=toplabs),data=u2 %>% filter(!target), alpha=0.3,color="gray")+
+    geom_point(aes(text=toplabs), data=u2 %>% filter(target))+
+    scale_size(range=c(0.1,2), guide = "none")+
+    #coord_cartesian(expand=T, ylim = c(-3,4))+
+    labs(color="year")+
+    theme_minimal()+
+    theme(legend.position = "right")+
+    theme(axis.title = element_blank(), axis.text = element_text(size=4), 
+          legend.position = "none")+
+    facet_wrap(~xser, ncol = 3)
+  g2=plotly::ggplotly(g, tooltip = "text")
+return(g2)
+}
+
+plotlist = list()
+udat = dodat(fesfilm2, nx="ngens", filmx=filmgen,mincat=900,minleg=4)
+plotlist[[1]]=dobigplot(udat, "Genres")
+plotlist[[2]]=domoveplot(udat)
+udat = dodat(fesfilm2, nx="ncountries", filmx=filmcountry,mincat=10,minleg=15)
+plotlist[[3]]=dobigplot(udat %>% mutate(V2=V2*-1), "Countries")
+plotlist[[4]]=domoveplot(udat)
+udat = dodat(fesfilm2, nx="nlangs", filmx=filmlang,mincat=10,minleg=5)
+plotlist[[5]]=dobigplot(udat, "Languages")
+plotlist[[6]]=domoveplot(udat)
+
+udat = dodat(fesfilm2, nx2="ngens",filmx2=filmgen, filmx=filmlang,mincat=c(10,900),minleg=c(5,4), nx="nlangs")
+plotlist[[7]]=dobigplot(udat, "Genres, Languages", c("Languages","Genres") )
+
+save(plotlist, file="plotlist.RData")
+
+
+
+# year plot
+ggplot(udat, aes(x=V1, y = V2, color=year, text=toplabs, size=(size+10)))+
+  geom_point(alpha=0.9)+
+  #geom_text(aes(x=V1, y=V2, label=event), data=u %>% filter(!is.na(series)),hjust=0, alpha=0.6)+
+  #geom_line(data=u %>% filter(!is.na(series3)), alpha=0.3)+
+  #geom_point(data=u %>% filter(!is.na(series3)))+
+  scale_size(range=c(0.2,3.5)+2, guide = "none")+
+  #coord_cartesian(expand=T, ylim = c(-3,4))+
+  scale_color_viridis_c(end = 0.95, breaks=seq(2009,2021,2))+
+  #guides(colour = guide_legend(override.aes = list(size=3)))+
+  labs(color="Year", title="")+
+  theme_minimal()+
+  theme(legend.position = "right")+
+  theme(axis.title = element_blank(), axis.text = element_text(size=4))
+
+
+
+#### extract the data object for meeting ####
+
+
+
+fesfilm2 %>% 
+  rename(nsort="ngens") %>% # because var passing {{}} syntax is wonky
+  group_by(EventID_VZ) %>% 
+  arrange(desc(nsort), is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+  mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+  filter(!duplicated(tmp)) %>%  # remove duplicate films within event (works, w ungroup fewer rows)
+  group_by(EventID_VZ) %>% filter(n()>=25) %>% ungroup()  %>%
+  # left_join(filmgen, by="refFilm") %>%  # JOIN
+  # filter(!is.na(txtKind)) %>% 
+  write_excel_csv("gens.csv")
+
+fesfilm2 %>% 
+  rename(nsort="nlangs") %>% # because var passing {{}} syntax is wonky
+  group_by(EventID_VZ) %>% 
+  arrange(desc(nsort), is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+  mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+  filter(!duplicated(tmp)) %>%  # remove duplicate films within event (works, w ungroup fewer rows)
+  group_by(EventID_VZ) %>% filter(n()>=25) %>% ungroup()  %>%
+  # left_join(filmgen, by="refFilm") %>%  # JOIN
+  # filter(!is.na(txtKind)) %>% 
+  write_excel_csv("lang.csv")
+
+fesfilm2 %>% 
+  rename(nsort="ncountries") %>% # because var passing {{}} syntax is wonky
+  group_by(EventID_VZ) %>% 
+  arrange(desc(nsort), is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+  mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+  filter(!duplicated(tmp)) %>%  # remove duplicate films within event (works, w ungroup fewer rows)
+  group_by(EventID_VZ) %>% filter(n()>=25) %>% ungroup()  %>%
+  # left_join(filmgen, by="refFilm") %>%  # JOIN
+  # filter(!is.na(txtKind)) %>% 
+  write_excel_csv("countries.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+#### pipeline figure for latent space ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### old edgelist conversion for Vejune ####
+
+ed = read_csv("C:/Users/Andres/Downloads/Edges.csv") %>% mutate(tmp=1)
+p= pivot_wider(ed, values_from=tmp, values_fill = 0, id_cols = 1, names_from = 2) %>% column_to_rownames("Source") %>% as.matrix()
+
+library(quanteda)
+d = as.dfm(t(p)) 
+d2 = fcm(d)
+dim(d2)
+all((d2 %>% as.matrix() %>% diag)==0)
+d3 = reshape2::melt(d2 %>% as.matrix()) %>% .[.[,3]>0,]
+colnames(d3)=c("Source", "Target", "n")
+dim(d3)
+rownames(d3)=NULL
+write_excel_csv(d3, "edges_cooccurrence.csv")
+
+
+
+# what about films
+fesfilm=read_excel("C:/Users/Andres/korpused/publicvalue/cinando/festivals_june2022/Festival-film list.xlsx") 
+library(igraph)
+library(ggraph)
+p= pivot_wider(ed %>% select(Source, refFilmAK,tmp), values_from=tmp, values_fill = 0, id_cols = 1, names_from = 2) %>% column_to_rownames("Source") %>% as.matrix()
+d = as.dfm(p) 
+d2 = fcm(d)
+dim(d2)
+all((d2 %>% as.matrix() %>% diag)==0)
+d3 = d2 %>% as.matrix()
+
+y=fesfilm3$YearOfProduction[match(rownames(d3), fesfilm3$refFilmAK)]
+
+g=graph_from_adjacency_matrix(d3, mode = "undirected", weighted=NULL)
+l <- create_layout(g, layout = 'fr')
+deg = log(rowSums(d3>0)+1)
+gr=ggraph(l) + 
+  #geom_edge_link(color="gray", alpha=1, width=0.1) + 
+  geom_node_point(aes(colour = y, size=deg,alpha=-1*deg))+
+  scale_color_viridis(end=0.95)+
+  scale_alpha(range=c(0.2,0.8))+
+  scale_size(range=c(0.1,3))+
+  theme_void()+
+  theme(legend.position="none", plot.background=element_rect(fill="white", color="white "))
+  
+ggsave("filmsnetwork.png", gr, device=ragg::agg_png, height = 5000, width = 5000, units = "px")
+
+
+
+
+####
+fesfilm2 %>% filter(LibelleEvent_NEW=="Festival_de_Cannes_2012") %>% as.data.frame %>% head
+filmgen %>% filter(refFilm %in% (fesfilm2 %>% filter(LibelleEvent_NEW=="Festival_de_Cannes_2012") %>% pull(refFilm))) %>% filter(NoOrder=="1") %>% pull(txtKind) %>% table %>% sort
+
+
+
+
+
+fesfilm2 %>% group_by(EventID_VZ) %>% mutate(n=n()) %>% slice(1) %>% select(idFestival_NEW, libelleFestival_NEW_VZ, LibelleEvent_NEW_VZ, lstTypeEvent, n) %>% arrange(LibelleEvent_NEW_VZ) %>% write_csv("marketcheck.csv")
+

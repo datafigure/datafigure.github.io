@@ -1,27 +1,27 @@
 {
-    "id": "FCA78F8F",
-    "path": "~/GitHub/datafigure.github.io/reports/chatgpt_eng.qmd",
-    "project_path": "reports/chatgpt_eng.qmd",
+    "id": "72AC0C1C",
+    "path": "~/GitHub/datafigure.github.io/reports/chatgpt.qmd",
+    "project_path": "reports/chatgpt.qmd",
     "type": "quarto_markdown",
-    "hash": "0",
+    "hash": "2448165258",
     "contents": "",
     "dirty": false,
-    "created": 1677443692570.0,
+    "created": 1677443689359.0,
     "source_on_save": false,
-    "relative_order": 7,
+    "relative_order": 3,
     "properties": {
         "rmdVisualMode": "false",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "50,91",
-        "scrollLine": "38"
+        "cursorPosition": "253,4",
+        "scrollLine": "233"
     },
     "folds": "",
-    "lastKnownWriteTime": 1677506055,
+    "lastKnownWriteTime": 1677620328,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1677506055633,
+    "last_content_update": 1677620328854,
     "read_only": false,
     "read_only_alternatives": []
 }

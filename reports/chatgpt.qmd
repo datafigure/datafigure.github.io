@@ -90,7 +90,7 @@ TLÜ töötaja: enne raporti lugemust palume täita väikse **küsimustiku**. Ai
 
 # Ülevaade
 
-13-22.02.2023 toimus Tallinna Ülikoolis kolm koolitust (2 eesti, 1 inglise keeles), kust võttis osa kokku 127 ülikooli töötajat. Selle käigus andis koolitaja ülevaate generatiivse tehisintellekti rakendustest, fookusega tekstigeneraatoritel nagu ChatGPT, mille võimekust katsetati ka sealsamas klassiruumis. 
+13-22.02.2023 toimus Tallinna Ülikoolis kolm koolitust (2 eesti, 1 inglise keeles) generatiivse tehisintellekti ja ChatGPT teemal. Tegemist on aina suuremat kõlapinda leidvate tehnoloogiatega (vt ka @meedia allpool), ja seda heal põhjusel, kuna muutused mida nende võimekus kaasa toob, on vaieldamatult suured. Koolitusest võttis osa kokku 127 ülikooli töötajat. Selle käigus andis koolitaja ülevaate generatiivse tehisintellekti rakendustest, fookusega tekstigeneraatoritel nagu ChatGPT, mille võimekust katsetati ka sealsamas klassiruumis. 
 <br>
 
 :::{layout-ncol="3"}
@@ -248,6 +248,20 @@ knitr::include_graphics("6.1.png")
 ```
 :::
 <div style="text-align:right;margin: 0 auto;"> <font size="2">(Liiguta kursor slaidile et suurendada)</font></div>
+
+---
+
+<br>
+
+# Meediakajastust {#meedia}
+
+- Postimehe [intervjuu](https://www.postimees.ee/7717736/tehisintellekti-abil-kodutoo-kirjutajaid-on-pea-voimatu-vahele-votta) Andres Karjuse jt ekspertidega
+- BFM Luna TV [klipp](https://www.youtube.com/watch?v=cXpNkDgfP7Y) ChatGPT kasutusest Tallinna Ülikoolis
+- Arvamuslugu [Novaatoris](https://novaator.err.ee/1608889298/skandaalne-chatgpt-kuidas-panna-see-eesti-keele-heaks-toole) ChatGPT teemal keeletehnoloogide vaatenurgast
+- Oliver Laasi [arvamuslugu](https://www.err.ee/1608846064/oliver-laas-chatgpt-ja-tehisintellekti-plagiaat) ERRis ChatGPT ja plagiaadi teemal 
+- Kuku Raadio saade Kukkuv Õun [ChatGPT teemal](https://kuku.pleier.ee/podcast/kukkuv-oun/147052)
+- Ekspressi "[intervjuu](https://ekspress.delfi.ee/artikkel/120128020/esitasime-tehisintellektile-7-kusimust-kohati-ajas-robot-jama-siis-ullatas-jalle-analuusivoimega)" ChatGPT'ga.
+
 
 
 

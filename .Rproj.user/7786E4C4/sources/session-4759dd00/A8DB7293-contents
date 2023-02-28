@@ -1,0 +1,733 @@
+
+#### load ####
+library(plotly)
+library(colorspace)
+library(scales)
+library(readxl)
+library(umap)
+library(igraph)
+library(text2vec)
+library(quanteda)
+library(shadowtext)
+library(geosphere)
+library(lubridate)
+library(stringr)
+library(Hmisc)
+library(ggraph)
+library(tidygraph)
+library(ggbeeswarm)
+library(maps)
+library(rworldmap)
+library(treemapify)
+library(boot)
+library(ISOcodes)
+library(svs)
+library(reticulate); use_condaenv('r-reticulate', required = T )
+library(tidyverse)
+
+
+
+
+disttomean=function(x, m, w, maxd=NULL, geo=F, divmult=2){
+  if(!geo){
+    d = dist2(x %>% select(starts_with("V")) %>% as.matrix,
+              m,   #  festival or grand mean
+              method = "euclidean", norm = "none") %>% 
+      {.[,1]/maxd*divmult} # scale by max latent dist, indiv multiply*2 so scale is [0,1]
+  } else {
+    d = distGeo(x %>% select(long, lat), m)/1000 # distance from geo-mean centre
+  }
+  div = weighted.mean(d,w, na.rm=T)
+  ## bootstrapped confidence intervals
+  if(length(unique(d))==1){
+    bi=c(div,div) # if no variance/constant then bootstrap would fail anyway.
+  } else {
+    bi=
+      boot(d, function(dx,y){weighted.mean(dx[y], w=w[y])}, R=1000) %>% # multicore won't work on Win
+      boot.ci(type = "norm") %>%
+      {.$normal[2:3]}
+  }
+  return(c(div, bi))
+}
+
+# for change calc
+meanvecs=function(x, inds, ems, loopindex, maxdist){
+  xt = x[inds,] %>% filter(EventID_VZ==ems$EventID_VZ[loopindex]) %>% 
+    select(starts_with("V")) %>%
+    colMeans() %>% matrix(nrow=1)
+  xp = x[inds,] %>% filter(EventID_VZ==ems$EventID_VZ[loopindex-1]) %>%  # prev year
+    select(starts_with("V")) %>% 
+    colMeans() %>% matrix(nrow=1)
+  return(dist(rbind(xt, xp))[1]/maxdist) 
+  # not multiplied by 2, as it's comparison to an external mean, like the external diversity calculation
+}
+
+
+# round_any = function(x, accuracy, f=round){f(x/ accuracy) * accuracy}
+
+
+
+dolatentspaces = function(metatype, filmgen=NULL){
+  
+  if(metatype=="genre"){
+    require(svs)
+    # the only inferred latent space so far
+    genmat = filmgen %>% filter(txtKind!="unknown", !is.na(txtKind)) %>% 
+      select(refFilm, txtKind) %>% mutate(tmp=1) %>% 
+      pivot_wider(values_from=tmp, values_fill = 0, id_cols = "refFilm", names_from = "txtKind") %>% 
+      column_to_rownames("refFilm") %>% as.matrix() %>% 
+      as.dfm() %>% fcm() %>% 
+      #as( "generalMatrix") %>%   #
+      as.matrix() %>%  # deprecated
+      {.[lower.tri(., diag = F)]=t(.)[lower.tri(., diag = F)];.}
+    diag(genmat) = (filmgen %>% group_by(refFilm) %>% filter(n()==1, NoOrder=="1") %>% 
+                      ungroup() %>% count(txtKind) %>% 
+                      column_to_rownames("txtKind"))[rownames(genmat),"n"] #  counts of single-tags i.e. occurs with itself, single-genre films. helps give meaning to e.g. drama.
+    pgenmat=pmi(genmat) %>% {.[.<0]=0;.} # Positive PMI
+    # fcm method gives only upper triangle, which is fine below for fest-fest (no double links needed), but for vectors need full matrix
+    m = LatentSemanticAnalysis$new(10)
+    lat = m$fit_transform(pgenmat) 
+  }
+  
+  # Geo.
+  # all distances need to be haversine/great circle or ellipsoid analogue.
+  # festival is film-countries weighted geo-average location geomean()
+  # internal diversity is weighted mean of distance matrix of geo distances (in meters). weighs are from films (a country can occur multiple times in the dist matrix), for the w.mean the weights are multiplied (so 0.5 and 0.5 become a 0.25 for a given comparison).
+  # weights %o% outer product
+  # distm with default distGeo is spherical distance on ellipsoid (more accurate than haversine which assumes perfect sphere).
+  if(metatype=="geo"){
+    require(maps) # for cities
+    lat = world.cities %>% # from package
+      mutate(txtKind=tolower(country.etc), name=tolower(name)) %>% 
+      filter(capital==1 |  name %in% c("montenegro", "los angeles", "gazzah", "pristina", "podgorica")) %>%
+      arrange(-pop) %>%   # LA pop > Washington, so keeps that
+      filter(!duplicated(txtKind)) %>%   
+      select(txtKind, lat, long)  %>% 
+      column_to_rownames( var = "txtKind")
+  }
+  
+  if(metatype=="lang"){
+    require(reticulate)
+    # conda_install(envname = 'r-reticulate', c('lang2vec'), pip = TRUE, python_version="3.6")
+    py_run_string("
+import lang2vec.lang2vec as l2v
+import numpy as np
+np.load.__defaults__=(None, True, True, 'ASCII') # fix numpy bug
+"
+    )
+    py_run_string("langs = list(l2v.URIEL_LANGUAGES)")
+    py_run_string(
+      "
+feats = l2v.get_features(list(l2v.URIEL_LANGUAGES), l2v.fs_concatenation(['syntax_knn', 'phonology_knn','inventory_knn','fam', 'geo']), header=False, minimal=False)
+# featsl = l2v.get_features(r.isos, 'learned', header=False, minimal=False)
+"
+    )
+    feats = do.call(rbind,  py$feats)
+    rn=rownames(feats)
+    feats=apply(feats #[intersect(filmlang2$iso, rn),]
+                ,2, as.numeric) 
+    rownames(feats)=rn # intersect(filmlang2$iso, rn)
+    feats2 = feats %>% .[,apply(.,2,function(x) !all(x==0) & !all(x==1) )]; dim(feats2)  # 91 x 793
+    
+    # feats2 %>% reshape2::melt() %>% ggplot(aes(Var2, Var1, fill=value))+geom_tile()
+    # d=dist(feats2); d[is.na(d)]=max(d, na.rm=T)
+    # plot(hclust(d))
+    # sort(as.matrix(d)["fra",]) %>% head
+    # works!
+    
+    # reduce very long mostly binary feature vecs to a latent space
+    m = LatentSemanticAnalysis$new(20)
+    lat = m$fit_transform(feats2) 
+    
+    # sim2( langlat, langlat["est",,drop=F])[,1] %>% sort(T) %>% head(10)
+    # dist2( langlat, langlat["est",,drop=F], method="euclidean", norm="none")[,1] %>% {names(.)=rownames(langlat);.} %>% sort %>% head(10)
+    # dist2( genlat, genlat["Comedy",,drop=F], method="euclidean", "none") %>% {rownames(.)=rownames(genlat);.} %>% .[,1] %>% sort
+    
+  }
+  
+  if(metatype %in% c("lang", "genre")){
+    latmap = umap(lat)$layout %>% as.data.frame() %>%
+      mutate(txtKind=rownames(lat))
+    if(metatype=="genre"){
+      latmap=latmap %>% left_join(count(filmgen, txtKind), by="txtKind")
+    }
+    attr(lat, "latmap")=latmap
+  }
+  return(lat)
+  
+}
+
+
+
+countryfixes = 
+  tribble(
+  ~txtKind, ~txtKind2,
+  "united kingdom"  , "uk",
+  "korea (south)", "korea south",
+  "korea (north)", "korea north",
+  "birmanie", "myanmar",
+  "hong kong (china)", "china",
+  "trinidad  & tobago", "trinidad and tobago",
+  "central african rep.", "central african republic",
+  "acores", "portugal",
+  "azores" , "portugal",
+  "macao", "china",
+  "guernsey", "uk",
+  "canary islands" , "spain",
+  "kurdistan" , "iraq" , # their capital is on iraqi territory; so for matching purposes relabeling
+  "curacao" , "venezuela" # dutch territory island but next to VE
+) 
+langfixes=
+  tribble(
+    ~txtKind, ~txtKind2,
+    "belarussian"  , "belarusian",
+    "ukranian", "ukrainian",
+    "albanian" , "tosk albanian", # need one
+    "flemish","dutch",
+    "chinese", "mandarin chinese",
+    "mandarin", "mandarin chinese",
+    "mandarin (traditional)","mandarin chinese",
+    "taiwanese", "mandarin chinese",
+    "mexican","spanish",
+    "farsi" , "western farsi",
+    "slovakian" , "czech",  # close enough
+    "greek" , "modern greek (1453-)",
+    "cantonese" , "yue chinese",
+    "persian","iranian persian",
+    "hazaragi","iranian persian",
+    "swahili","swahili (individual language)",
+    "australian","english",
+    "creole","haitian",
+    "gaelic","scottish gaelic",
+    "scottish" , "scots",
+    # "inuktitut" , "inuinnaqtun", # no vector
+    "malay","standard malay",
+    "malaysian","standard malay",
+    "sinhale","sinhala",
+    "sesotho", "southern sotho",
+    "berber","tarifit",  # it's a family, just picking one
+    "tunisian","tunisian arabic",
+    "azerbaijani","south azerbaijani",
+    "mongole" , "mongolia buriat",
+    "algerian", "algerian arabic",
+    "moroccan","moroccan arabic",
+    "moor" , "egyptian arabic",
+    "moore" , "egyptian arabic",
+    "arabic" , "egyptian arabic",  # need to pick one
+    "arabic-egypt", "egyptian arabic",
+    "arabic-lebanese", "north levantine arabic",
+    "uzbek","northern uzbek",
+    "serbo-croatian" , "serbian",
+    "filipino" , "tagalog",
+    "guarani" , "paraguayan guaraní",
+    "fanagalo" , "zulu",  # a zulu-based pidgin
+    "pashtu", "central pashto",
+    "hassanya", "hassaniyya"
+  ) 
+# any(duplicated(langfixes[,1])) # ok
+
+fixdat = function(dat, metatype, filmkinds, fixes=NULL){
+  # might need to rewrite to be able to include all 2 meta kinda in a single object; for now it's ok.
+  
+  tmp = dat %>%  # full fest * film * genre vecs for exdiversity calc
+    ungroup() %>% 
+    left_join(filmkinds, by="refFilm", multiple = "all") %>%    # ! intentionally multiplies rows for each genre per film
+    filter(!is.na(txtKind), !(txtKind %in% c("unknown", "Unknown"))) %>%    # remove empty and unk if any
+    mutate(originalKind = txtKind)  # keep original
+    
+  if(metatype %in% c("geo", "lang")){ # need fixing and adding of external labels
+    
+    tmp2 = tmp %>% 
+      mutate(txtKind=tolower(txtKind)) %>% 
+      left_join(fixes, by="txtKind") %>%   # just joins fixes, no duplicates here, 2 is new
+      # adds already ok tags after fixing the ones that needed fixing:
+      mutate(txtKind2=case_when(is.na(txtKind2)~txtKind, T~txtKind2 )) # prepare for matching
+      
+    # event country
+    if(metatype=="geo"){
+        tmp3 = tmp2 %>% 
+          mutate(txtKind3 = txtKind2) %>%  # already matches lat object
+          # but add event country too:
+          mutate(txtCountryEvent_VZ=tolower(txtCountryEvent_VZ)) %>% 
+          left_join(fixes %>% rename(txtCountryEvent_VZ=txtKind, 
+                                     eventcountry2=txtKind2), 
+                    by="txtCountryEvent_VZ") %>%    # just joins fixes, no duplicates here
+          
+          mutate(eventcountry3=case_when(is.na(eventcountry2)~txtCountryEvent_VZ, 
+                                        T~eventcountry2 )) 
+      }
+      
+    # add labels from external iso object to be able to match languages
+    if(metatype=="lang"){
+      require(ISOcodes)
+      tmp3 = tmp2 %>% 
+        mutate(txtKind3 = ISO_639_3$Id[pmin(match(txtKind2, tolower(ISO_639_3$eng)), 
+                                                     match(txtKind2, tolower(ISO_639_3$Name)), na.rm = T)]) %>% 
+        mutate(isoname = ISO_639_3$Name[pmin(match(txtKind2, tolower(ISO_639_3$eng)), 
+                                             match(txtKind2, tolower(ISO_639_3$Name)), na.rm = T)]) %>% 
+        filter(!is.na(txtKind3), !(txtKind3 %in% c("iku", "osi")))  # won't match
+    }
+  } 
+  if(metatype %in% c("genre", "role") ){
+    tmp3=tmp %>% mutate(txtKind2=txtKind, txtKind3=txtKind) # already matches, but for compatibility
+  }
+    
+  return(tmp3)
+}
+
+dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL, 
+                    minfilms=15, customlabs=NULL){
+  # make sure no variable starts with "V", as this is reserved to filter latent vectors
+  dat = fesfilm2 %>% 
+    rename(nsort:={{sortvar}}) %>%  # variable passing now works
+    mutate(tmp=paste0(TitleVA, "_", YearOfProduction )) %>% 
+    group_by(EventID_VZ) %>%   # for duplicate film removal
+    arrange(desc(nsort), is.na(YearOfProduction), .by_group = T) %>%  # prefer more complete entries
+    filter(!duplicated(tmp)) %>%  # remove duplicate films within event (works, w ungroup fewer rows)
+    group_by(EventID_VZ) %>% filter(n()>=minfilms) %>% ungroup()  # keep events with 15 or more films; but metadata specific analyses will lower that a bit, as not all films have metadata.
+  
+  # role/gender works differently, no fixing and space needed, already a diversity measure.
+  # does need weighting, doing it here (mostly 1-4 but some have 20-30 dir/prod credits)
+  if(metatype=="role"){
+    d = dat %>% group_by(EventID_VZ) %>% filter(n()>=15) # just to make faster
+    # instead of joining everything, do calc first
+    gratios = filmkinds %>% 
+      filter(refFilm %in% d$refFilm) %>% 
+      group_by(refFilm) %>% 
+      summarise(
+        ratiof=sum(txtKind=="F")/sum(txtKind %in% c("F", "M")),
+        ratiofmax = sum(txtKind %in% c("F", "other")) / n(), # max if all unk would be F
+        ratiofmin = sum(txtKind=="F") / n() ,   # min if all unk would be M
+        nother=round(sum(txtKind=="other")/n(), 5)  # ratio of unknowns per film; round just in case to avoid any chance of floating point error, for filter below
+        )
+    
+    dratios = filmkinds %>% 
+      filter(refFilm %in% d$refFilm) %>% 
+      filter(txtType == "Director") %>% 
+      group_by(refFilm) %>% 
+      summarise(
+        ratiodf=sum(txtKind=="F")/sum(txtKind %in% c("F", "M")),
+        ratiodfmax = sum(txtKind %in% c("F", "other")) / n(), # max if all unk would be F
+        ratiodfmin = sum(txtKind=="F") / n()    # min if all unk would be M
+        #dnother=round(sum(txtKind=="other")/n(), 5)  # ratio of unknowns per film; round just in case to avoid any chance of floating point error, for filter below
+      )
+    
+    pratios = filmkinds %>% 
+      filter(refFilm %in% d$refFilm) %>% 
+      filter(txtType == "Producer") %>% 
+      group_by(refFilm) %>% 
+      summarise(
+        ratiopf=sum(txtKind=="F")/sum(txtKind %in% c("F", "M")),
+        ratiopfmax = sum(txtKind %in% c("F", "other")) / n(), # max if all unk would be F
+        ratiopfmin = sum(txtKind=="F") / n()    # min if all unk would be M
+        #pnother=round(sum(txtKind=="other")/n(), 5)  # ratio of unknowns per film; round just in case to avoid any chance of floating point error, for filter below
+      )
+    
+     filmfestvecs = d %>% 
+      left_join(gratios, by = "refFilm") %>% # does not multiply rows
+      left_join(dratios, by = "refFilm") %>% 
+      left_join(pratios, by = "refFilm") %>% 
+      filter(!is.na(ratiof), nother<1) %>%   # some films don't have crew data, some only unk genders
+      group_by(EventID_VZ) %>% 
+       mutate(nf=n_distinct(refFilm)) %>% 
+       filter(nf>=minfilms) # final filter here
+     festvecs=filmfestvecs %>% 
+      summarise(
+        across(starts_with("ratio"), mean,na.rm=T),
+        across(c( "refEvent", "lstTypeEvent", "LibelleEvent_NEW", "LibelleEvent_NEW_VZ", "YearEvent", "libelleFestival_NEW_VZ", "ab", "PFIAF category", "nf"), first)
+      ) %>% 
+       mutate(tool=paste0(
+         LibelleEvent_NEW_VZ, 
+         ", F2Mratio=",  ratiof  %>% round(2),
+         ", producerratio=", ratiopf %>% round(2),
+         ", directorratio=",  ratiodf %>% round(2),
+         ", nfilms=", nf
+       )) 
+    
+    info = paste(length(unique(filmfestvecs$refFilm)), "unique films," ,
+                 length(unique(filmfestvecs$EventID_VZ)), "unique fests,", 
+                 nrow(filmfestvecs), "film*fest pairs,",
+                 "after final filter")
+    info %>% print
+    
+    attr(festvecs, "filmfestvecs")=filmfestvecs
+    attr(festvecs, "info") = info
+    
+    return(festvecs)
+  }
+  
+  # integrated fixes and join with metadata labels here, in prep for matching to spaces
+  dat = fixdat(dat, metatype, filmkinds, fixes=fixes)
+  
+  paste(nrow(dat), "fest*films pre meta filter,", paste(unique(dat$EventID_VZ) %>% length, "fests pre meta filter")) %>% print # 
+  
+  filmfestvecs0 = 
+    dat %>%   
+    # final filter, as some have missing meta
+    group_by(EventID_VZ) %>% filter(n_distinct(refFilm)>=minfilms) %>%  
+    # weights
+    group_by(refFilm) %>% mutate(weight = 1/n_distinct(txtKind))   # film meta weights
+  if(metatype=="genre"){
+    filmfestvecs=filmfestvecs0 %>% mutate(tmpweight=1)  # but not for genre
+  } else {
+    filmfestvecs=filmfestvecs0 %>% mutate(tmpweight=weight)
+  }
+  filmfestvecs = filmfestvecs %>%  
+    group_by(EventID_VZ) %>% mutate(exweight = tmpweight*(1/n_distinct(refFilm))) %>% 
+    select(-tmpweight) %>% 
+    
+    # add festival main type, using original label
+    #group_by(EventID_VZ, txtKind) %>% 
+    # add_count(name = "nc") %>% # won't work with weighted
+    # -festival main now added below
+    # mutate(nc=sum(weight)) %>% 
+    # group_by(EventID_VZ) %>% 
+    # mutate(firstkind = txtKind[nc == max(nc)][1]) %>% 
+    # select(-nc) %>% 
+    ungroup() %>% 
+    
+    # film main type
+    mutate(ord=suppressWarnings(as.numeric(NoOrder))) %>%    # will throw warning, is ok
+    mutate(ord= case_when(is.na(ord)~100,T~ord)) %>% 
+    group_by(refFilm) %>% mutate(firstfilmkind = txtKind[ord == min(ord)][1]) %>%  
+    #select(-ord) %>% 
+    ungroup() %>% 
+    
+    # add latent vectors
+    cbind(as.data.frame(lat)[.$txtKind3,]) 
+  
+  # rank top discrete labels, assign main label to fest
+  tops0 = filmfestvecs %>% group_by(EventID_VZ, txtKind) %>% 
+    summarise(s=sum(weight), no=sum(1/ord), .groups = "drop_last" ) %>% 
+    mutate(s=(s/sum(s)*100)) %>% 
+    arrange(-s, -no, .by_group = T)
+  tops=tops0 %>% 
+    slice(1:5) %>% 
+    filter(s>0) %>% 
+    mutate(s=round(s)) %>% # round after exact ranking
+    mutate(l = paste0(txtKind,":",s,"%"), toptest=txtKind[s==max(s)][1]) %>%  
+    summarise(firstkind=toptest[1], tops=paste(l,collapse=" "), .groups = "drop")
+  filmfestvecs = left_join(filmfestvecs, tops, by="EventID_VZ")
+  # add event lat vector for geo
+  if(metatype=="geo"){
+    filmfestvecs = filmfestvecs %>% 
+      cbind(as.data.frame(lat)[.$eventcountry3,] %>% 
+              rename(eventlat=lat, eventlong=long)
+            )
+  }
+  rownames(filmfestvecs)=NULL 
+  
+  
+  # for some reason this is slower in new dplyr 1.1.0? rewriting as 2 cbinded operations, much faster (but prone to errors if not matching; checked now, works)
+  if(metatype=="genre"){ # latent genres are averaged, but countries and languages not.
+    filmfestvecs = 
+      cbind(
+        filmfestvecs %>% group_by(EventID_VZ, refFilm) %>% select(-starts_with("V", ignore.case=F)) %>% slice(1) %>% ungroup() ,
+        filmfestvecs %>% group_by(EventID_VZ, refFilm) %>% summarise(across(starts_with("V", ignore.case=F),mean), .groups = "drop") %>% select(-c(EventID_VZ, refFilm))
+      ) %>% 
+      # filmfestvecs %>% group_by(EventID_VZ, refFilm) %>% 
+      # summarise(across(!starts_with("V"), first),
+      #           across(starts_with("V"),mean)) %>% 
+      ungroup() %>% 
+      mutate(weight=1)  # important, set weights to 1 now, since 1 vec per film!
+    
+  }
+  info = paste(length(unique(filmfestvecs$refFilm)), "unique films," ,
+        length(unique(filmfestvecs$EventID_VZ)), "unique fests,", 
+        nrow(filmfestvecs), "film*fest pairs,",
+        "after final filter")
+  info %>% print
+  #filmfestvecs<<-filmfestvecs  # save tmp object in global for aother calc
+  
+  exfilms = filmfestvecs %>% 
+    filter(nchar(gsub("[^ ]", "", tmp))<=3, nchar(tmp)<25 ) %>% 
+    group_by(tmp) %>% mutate(n=n()) %>% arrange(-n, .by_group = T) %>% 
+    group_by(firstfilmkind) %>% slice_max(n,with_ties = F) %>% ungroup %>%  
+    select(tmp, n, firstfilmkind) %>%  
+    rename(firstkind=firstfilmkind) %>% 
+    filter(!duplicated(tmp)) %>% arrange(-n) 
+  
+  
+  # scaling factor and latent centre calculations
+  maxdist=NULL
+  if(metatype %in% c("lang", "genre")){
+    # scaling value (not in geo)
+    maxdist = dist(lat) %>% max
+    
+    ## Festival ecosystem grand mean vector, 
+    # weighted by meta and festival size to balance things out
+    fmv = filmfestvecs %>% 
+      summarise(across(starts_with("V"), weighted.mean, w=exweight, na.rm=T)) %>% 
+      as.matrix()
+    maxexdist = dist2(lat, fmv, "euclidean", "none") %>% max # max to mean vector here!
+    
+    # fmv1 = tmpfestvecs %>% summarise(across(starts_with("V"), mean)) %>% select(starts_with("V")) %>% colMeans() %>% matrix(nrow=1) # initial simpler mean of means variant
+  } else {
+    if(metatype=="geo"){
+      # no scaling factor required for geo
+      # geo grand mean vec:
+      fmv=geomean(filmfestvecs %>% select(long, lat),w = filmfestvecs$exweight)
+    }
+  }
+  
+  # system internal diversity, for a, b and ab joint.
+  # joint
+  #tmpmean = 
+  # A
+  #disttomean(filmfestvecs %>% filter(ab=="A"), fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=2)
+  
+  # B
+  
+  
+  # external diversity needs slightly different scaling!
+  # dist(rbind(langlat["jpn",], fmv))/maxexdist*2
+  # summary(dist2(langlat, fmv, "euclidean", "none")[,1] / maxexdist)
+  
+  # do averaged festival vectors with bootstrapped confidence intervals
+  festvecs = filmfestvecs %>% 
+    group_by(EventID_VZ) %>% 
+    group_split() %>% 
+    lapply(function(x){
+      x=ungroup(x)
+      # inter-distance of all films as metric
+      #indiv_interdist = dist2(x %>% select(starts_with("V")) %>% as.matrix, method = "euclidean", norm = "none") %>% .[lower.tri(.)] %>% mean
+      
+      # distance from mean but excluding self; 
+      # xx=x %>% select(starts_with("V")) %>% as.matrix
+      # d=rep(NA, nrow(xx))
+      # for(i in 1:nrow(xx)){ 
+      #   d[i]=dist2( matrix(colMeans(xx[-i,]),nrow=1), # festival mean
+      #               xx[i,,drop=F],
+      #         method = "euclidean", norm = "none")[1,1]
+      # }
+      # indiv = mean(d, na.rm=T)
+      
+      
+      # internal diversity, distance from mean incl self, essentially the MAD
+      # including self in mean might bias, but it's a simpler calc
+      # and MAD seems pretty widely used, also includes self
+      if(metatype=="geo"){
+        fmean=geomean(x %>% filter(!is.na(lat)) %>% select(long, lat), x$weight) # is matrix
+        colnames(fmean)=c("long", "lat")
+      } else {
+        fmean = summarise(x, across( starts_with("V"), weighted.mean, w=x$weight, na.rm=T)) %>% 
+          as.matrix # festival mean
+        #  genres: equal, averaged above already (constant weight); 
+        #  for country and lang need weighted
+      }
+      
+      
+      # internal and external diversity + bootstrapped confidence
+      # mean, lower, upper
+      di=disttomean(x, fmean, w=x$weight, maxdist, geo=metatype=="geo", divmult=2)
+      de=disttomean(x, fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=1)
+      
+      res=cbind(
+        summarise(.data=x,
+                  across(c(
+                    EventID_VZ,
+                    LibelleEvent_NEW_VZ,
+                    libelleFestival_NEW_VZ,
+                    idFestival_NEW,
+                    YearEvent,
+                    txtCountryEvent_VZ, 
+                    ab,
+                    "PFIAF category",
+                    originalKind,
+                    # txtKind,
+                    # txtKind2,
+                    # txtKind3,
+                    firstkind,
+                    tops
+                  ), first),
+                  nf=n()
+        ),
+        #indiv_sdold= x %>% ungroup() %>% select(starts_with("V")) %>% apply(2,sd,na.rm=T) %>% mean(na.rm=T),
+        #summarise(x, across(starts_with("V"), sd, na.rm=T, .names="sd_{.col}")) %>% 
+        # indiv_interdist,
+        indiv=di[1], ilower=di[2], iupper=di[3],       # this is now scaled (above)
+        exdiv=de[1], elower=de[2], eupper=de[3], 
+        fmean  # averaged festival latent vector
+      ) 
+     
+      
+      
+      if(metatype=="geo"){
+        # additional comparison, geo distance between an event coords and all film coords
+        dev = disttomean(x, cbind(x$eventlong[1], x$eventlat[1]), 
+                         w=x$weight, maxd=NA, geo=T)
+        gx = cbind(
+          eventlong=x$eventlong[1], eventlat=x$eventlat[1], 
+          eventdist=dev[1], edlower=dev[2], edupper=dev[3] )
+        res=cbind(res, gx) %>% mutate(
+          tool=paste0(
+            LibelleEvent_NEW_VZ, 
+            ", indiv=", round(indiv), 
+            ", exdiv=", round(exdiv),
+            ", eventdist=", round(eventdist),
+            ", nfilms=", nf,
+            "\ntop: ",tops
+            )
+        )
+      } else {
+        res= res %>% mutate(
+          tool=paste0(
+            LibelleEvent_NEW_VZ, 
+            ", indiv=", round(indiv,2), 
+            ", exdiv=", round(exdiv,2),
+            ", nfilms=", nf,
+            "\ntop: ", tops
+            ))
+      }
+      
+      return(res)
+      
+    }) %>% 
+    bind_rows()
+  
+  if(is.null(customlabs)){
+    festvecs = festvecs %>% 
+      mutate(colorgenre =   # top ones across all fests; for plotting later
+               case_when(firstkind %in% head(names(sort(table(.$firstkind),decreasing = T)),6)~firstkind, T~"other" ) %>% as.factor()) %>% 
+      mutate(colorgenre = fct_relevel(colorgenre, 
+                                      c(names(sort(table(colorgenre),decreasing = T)) %>% .[.!="other"], "other") ))
+  } else {
+    festvecs = festvecs %>% 
+      mutate(colorgenre =   # top ones across all fests; for plotting later
+               case_when(firstkind %in% customlabs ~firstkind, T~"other" ) %>% 
+               as.factor()) %>% 
+      mutate(colorgenre = fct_relevel(colorgenre, customlabs))
+  }
+  
+  
+  paste(nrow(festvecs), "fest vectors") %>% print
+  # genre: 576 out of 622 left.
+  attr(festvecs, "exfilms")=exfilms
+  attr(festvecs, "latentcentre")=fmv
+  attr(festvecs, "maxdist")=maxdist
+  attr(festvecs, "filmfestvecs")=filmfestvecs
+  attr(festvecs, "info")=info
+  attr(festvecs, "tops")=tops0
+  
+  
+  return(festvecs)
+}
+
+## Latent space max distance for scaling
+# dist(lat) %>% as.matrix %>% {which(.==max(.), arr.ind = T)} # VR - AR vs Bollywood
+# dist2(lat[c("Bollywood", "VR - AR") %>% rep(4),], colMeans(lat[c("Bollywood", "VR - AR")%>% rep(4),]) %>% matrix(nrow=1), method="euclidean", norm="none")[,1] %>% mean %>% {./maxdist}  # makes sense to multiply by 2, so the scale is effectively [0,1]
+# dist2(lat[c("Bollywood", "Drama") %>% rep(4),], colMeans(lat[c("Bollywood", "Drama") %>% rep(4),]) %>% matrix(nrow=1), method="euclidean", norm="none")[,1] %>% mean %>% {./maxdist}
+
+
+
+
+# change over time calc
+dogenrechangevals = function(tmpfestvecs, festvecs, minevents=11){
+  maxdist=attr(festvecs, "maxdist")
+  genrechangevals = tmpfestvecs %>% group_by(libelleFestival_NEW_VZ) %>% 
+    filter(n_distinct(EventID_VZ)>=minevents) %>%  # replace with target filter
+    # ungroup %>% filter(libelleFestival_NEW_VZ==libelleFestival_NEW_VZ[1])#debug
+    group_split() %>% 
+    lapply(function(x){
+      x=ungroup(x)
+      emeans = x %>% group_by(EventID_VZ) %>% 
+        summarise(across(starts_with("V"), mean),
+                  YearEvent=mean(YearEvent)) %>% arrange(YearEvent)
+      # fmean = emeans %>% ungroup() %>% select(starts_with("V")) %>% colMeans() %>% matrix(nrow=1) # comparison to mean is not really informative, correlates strongly with diversity, which makes sense.
+      tmp = tibble(
+        # change_interdist= dist2(xt, xr, method = "euclidean", norm = "none") %>% 
+        #   .[lower.tri(.,diag = F)] %>% mean,
+        EventID_VZ=emeans$EventID_VZ,
+        dif = NA,
+        diflower=NA,
+        difupper=NA
+      )
+      for(i in 2:nrow(emeans)){
+        b=boot(x %>% filter(EventID_VZ %in% emeans$EventID_VZ[c(i, i-1)]),
+               meanvecs, R=200,
+               ems=emeans, loopindex=i, 
+               maxdist=maxdist)
+        bci = boot.ci(b, type = "norm") %>%
+          {.$normal[2:3]}
+        tmp$dif[i] = b$t0
+        tmp$diflower[i] = bci[1]
+        tmp$difupper[i] = bci[2]
+        
+      }
+      return(tmp)
+    }) %>% do.call(rbind, .) %>% 
+    left_join(., festvecs,  by="EventID_VZ")
+  return(genrechangevals)
+}
+
+
+
+dogenrecommonspace = function(festvecs, filmfestvecs){ # hacky helper function
+  allgenvecs = bind_rows(
+    # genres
+    genlat %>% as.data.frame() %>% rownames_to_column("firstkind") %>%  
+      mutate(YearEvent=0, type="genre",event=firstkind %>% toupper()) %>% 
+      filter(firstkind %in% names(tail(sort(table(filmgen$txtKind)),22))
+      ) %>% 
+      left_join(count(festvecs, firstkind) %>% rename( sizegen=n), by="firstkind") %>%
+      mutate(sizegen=case_when(is.na(sizegen)~2L, sizegen<5L~3L, T~sizegen))
+    ,
+    # films
+    filmfestvecs %>% filter(tmp %in% attr(festvecs, "exfilms")$tmp) %>% 
+      filter(!duplicated(tmp)) %>% select(starts_with("V"), firstfilmkind, YearEvent, tmp) %>% 
+      rename(firstkind=firstfilmkind) %>%  
+      mutate(type="film",
+             event= tolower(tmp) %>%  #gsub("[_ ]","\n",event) %>% gsub("^|$", '"',.), 
+               gsub("_([0-9]{4,4})", '"\n(\\1)',.) %>% gsub("^", '"',.),
+             sizegen=1,
+             tool=tmp
+             ) ,
+    # fests
+    festvecs %>% select(starts_with("V"), YearEvent,LibelleEvent_NEW_VZ,firstkind, ab, tool) %>% rename(event=LibelleEvent_NEW_VZ) %>% mutate(type="festival")
+    ) %>% 
+    #, tool=paste0(event, "\nmain: ", firstkind)) )  %>% 
+    mutate(colorgenre=case_when(firstkind %in% levels(festvecs$colorgenre)~firstkind, T~"other")
+           ) %>%   
+    mutate(colorgenre = fct_relevel(as.factor(colorgenre), levels(festvecs$colorgenre))) 
+  return(allgenvecs)
+}
+
+
+doUMAP = function(festvecs){
+  u = umap(festvecs %>% select(starts_with("V")), 
+           method = "umap-learn", min_dist=0.6, n_neighbors=20)$layout %>% 
+    as.data.frame() %>% 
+    cbind(festvecs %>% select(-starts_with("V"))) 
+    # mutate(colorgenre = 
+    #          case_when(firstkind %in% head(names(sort(table(festvecs$firstkind),decreasing = T)),6)~firstkind, T~"other" ) %>% as.factor()) %>% 
+    # mutate(colorgenre = fct_relevel(colorgenre, 
+    #                                 c(names(sort(table(colorgenre),decreasing = T)) %>% .[.!="other"], "other") )) %>%
+  if(!("sizegen" %in% colnames(u))){
+    u=u %>%  group_by(colorgenre) %>% 
+      mutate(sizegen = n()) %>% ungroup()
+  }
+   
+  return(u)
+}
+
+  
+  
+sleepnow=function(){
+  print(Sys.time())
+  if(Sys.info()["sysname"] == "Windows") {
+    installr::os.sleep(first_turn_hibernate_off = T)
+  } else {
+    system("pmset sleepnow")
+  }
+} 
+  
+  
+  
+
+
+
+
+
+
+
+
