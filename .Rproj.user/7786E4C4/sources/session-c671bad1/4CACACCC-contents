@@ -1,0 +1,2054 @@
+
+# variant semantika jaoks: treenida fasttext mingi suurema twitter korpuse (+ enda) peal, siis edasi treenida et divergence saada, aga suurem peaks stabiilsema semantika loodetavasti andma. samas probleem et kui kaua treenida, sest overfitib.
+# nt https://github.com/echen102/us-pres-elections-2020
+
+
+# sagedus hoopis värvina semantika UMAPi peal?
+
+
+# sentiment analysis juurde
+
+# ppmi vms co-occurrence/collocations juurde tõlgenduseks (mõlemat pidi bigrammid), pmst quantedaga sama mis lemmatiseerijas.
+
+
+#### load scripts ####
+
+source("C:/Users/Andres/Dropbox/cudan/medialanguage/twitter_scripts.R")
+corpusfolder ="C:/Users/Andres/korpused/twitter"
+#
+
+#### clean ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets.RData"))
+length(unique(tweets$user_id)); nrow(tweets) # 11180  # 1755603
+
+# before starting, remove long duplicate tweets (with shorter ones hard to tell, but long ones are obvious spam or automated somehow; plus some obvious spam), and tweets that are likely spanish not english. also do some preiminary pre-processing.
+tweets = tweetfilter_spam(tweets)
+load(file.path(corpusfolder, "tweets_extra.RData")) 
+tweets_extra1 = tweetfilter_spam(tweets_extra1 %>% mutate(side="news") ) 
+tweets_extra2 = tweetfilter_spam(tweets_extra2 %>% mutate(side="news") ) 
+tweets = rbind(tweets, tweets_extra1, tweets_extra2)
+rm(tweets_extra1, tweets_extra2); gc(verbose=F)
+tweets = filter(tweets, !duplicated(status_id)) %>% ungroup() # some in the extra part occur already in main
+save(tweets, file=file.path(corpusfolder, "followerminer/fixed", "tweets_cleaned.RData"))
+count(tweets, side)
+# 1 left   759967
+# 2 news  1825519
+# 3 right  745072
+
+
+# ## search some things before lemmatizing
+# x = grep("\\(\\(\\([^)]{3,35}\\)\\)\\)", tweets$text, value=T)
+# whistles = c("acab", 
+#              "([[:space:][:punct:]]|^)maga([[:space:][:punct:]]|$)",
+#              "([[:space:][:punct:]]|^)woke",
+#              "([[:space:][:punct:]]|^)vet[s]{0,1}([[:space:][:punct:]]|$)",
+#              "national border", 
+#              "immigration restriction",  
+#              "pro-natalist", "14 words",
+#              "Global special interest",
+#              "Bad hombre",
+#              "Law[ ]*(and|&)[ ]*order",
+#              "Inner cit(y|ies)",
+#              "International banks",
+#              "Coincidence",
+#              "Crony capitalis[mt]",
+#              "Nanny state",
+#              "Wonder working power",
+#              "Implicit bias",
+#              "Systemic racisim",
+#              "Small business",
+#              "Cancel culture",
+#              "Indoctrination",
+#              "Politically correct",
+#              "Groupthink",
+#              "Cultural marxism",
+#              "marxis[mt]"
+#              )
+# counts = data.frame(term=whistles,freq_left=NA, freq_right=NA)
+# for(i in 1:nrow(counts)){
+#   counts$freq_left[i] = length(grep(counts$term[i], tweets$text[tweets$side=="left"], 
+#                                     ignore.case = T))
+#   counts$freq_right[i] = length(grep(counts$term[i], tweets$text[tweets$side=="right"], 
+#                                      ignore.case = T))
+# }
+# counts$total = rowSums(counts[,2:3])
+# ##
+
+
+
+
+#### lemmatize ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets_cleaned.RData"))
+
+# token count pre-lem:
+# tweets %>% filter(side!="news") %>% pull(text) %>% strsplit("[[:space:]]+") %>% unlist(F,F) %>% length()   # 21327634
+# tweets %>% filter(side!="news") %>% pull(text) %>% strsplit("[[:space:]]+") %>% unlist(F,F) %>% unique() %>%  length()   # 965920
+# tt ratio 0.0452896
+
+library(spacyr); spacy_initialize()
+lem2 = tweetlemmatizer(tweets$text, news=tweets$status_id[tweets$side=="news"])
+multiword = attr(lem2, "multiword")
+extracorpus = attr(lem2, "extras") # extract for later
+attr(lem2, "extras") = NULL
+tw = tweets %>% filter(status_id %in% names(lem2))
+lem2 =lem2[tw$status_id] # now all aligned
+# save(lem2, tw, file=file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+save(lem2, tw, extracorpus, multiword, file=file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+
+# checks:
+tw %>% group_by(side) %>% count()
+nrow(tw)==length(lem2)
+length(lem2)
+tw$text[nrow(tw)]; lem2[length(lem2)]
+
+
+#sleepnow() 
+
+
+#### do dtm matrices ####
+#
+# load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+#
+dtm0 = lem2 %>% dfm(remove_padding = T) %>% 
+  dfm_group(groups=tw$user_id) %>% 
+  dfm_trim(min_termfreq = 100)
+
+# proportion of word users by word occurrence, log scale
+wprop = log(colSums(dfm_weight(dtm0, "boolean")))/log(colSums(dtm0))
+hist(wprop)
+(wprop[wprop<0.5]) %>% sort() %>% tail(20)
+
+# x = dtm0[,intersect(freqs1$term, colnames(dtm0))]   # check on linear scale
+# min((colSums(dfm_weight(x, "boolean")))/(colSums(x)))
+
+
+# filter out users who mostly use very specific, idiosyncratic language (words only used by them or them and a few others, doesn't reflect population), or uses basically only stopwords
+# removes about 100 spammy accounts
+dtmu = t(t( dfm_weight(dtm0, "prop") )*wprop) %>% rowSums()
+dtmu %>% sort() %>% plot() # 0.76
+# load(file.path(corpusfolder, "followerminer/fixed", "allusers.RData"))
+okusers = names(dtmu[dtmu>0.76]) 
+length(okusers) # 10986, gets rid of a handful of weird/spammy users, -171681 words (the lowest score is 200 tweets from somebody regularly spamming the same religious hashtags.
+dtm0 = dtm0 %>% dfm_trim(min_docfreq = 50) %>% .[okusers,]
+dtm0 = dtm0[rowSums(dtm0)>=20,]
+dim(dtm0); sum(dtm0) # 10471  9201, 19,249,336
+tf = dfm_tfidf(dtm0)
+wusers = colSums(dfm_weight(dtm0, "boolean"))
+save(dtm0,okusers,tf,wprop,wusers, file=file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+
+# count ok users and tweets
+tw %>% filter(user_id %in% okusers) %>% group_by(side) %>% count(user_id) %>% count(side)
+# left   6201 right  4785
+tw %>% filter(user_id %in% okusers) %>%  nrow() # 1483392
+tw %>% filter(user_id %in% okusers) %>% group_by(side) %>% count() 
+# left  750182 right 733210
+
+
+
+####  freq ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+
+
+
+freqs = dofreqs(lem2, tw, okusers, wprop, wusers)
+freqs = freqs %>% filter(ok) %>% select(-ok)
+nrow(freqs) # 6132
+
+save(freqs, file=file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+
+
+#### stats for paper ####
+x = tw %>% filter(user_id %in% okusers)
+x %>% nrow() # 1483385
+x %>% pull(user_id) %>% unique %>% length # 10986
+summary(x$created_at)
+count(x, side)
+# left  750180
+# right 733205
+count(x, user_id, side) %>% count(side)
+# 1 left  6201
+#2 right  4785
+lem2[tw$user_id%in%okusers] %>% unlist(F,F) %>% length  # 20,357,194
+lem2[tw$user_id%in%okusers] %>% unlist(F,F) %>% unique() %>% length
+298396 /  20357194
+
+
+
+
+
+
+#### sem aligned model UPDATED ####
+
+
+# fasttext install if needed #
+
+# --> spacy initialization imports python, conflicts with this one, don't load both! <---
+#
+# install_miniconda(update = T, force=T)
+# py_config()
+# py_version()
+# library(reticulate)
+# use_condaenv('r-reticulate', required = T )
+# conda_install(envname = 'r-reticulate', c('gensim'), pip = TRUE, python_version="3.6")
+# gensim = import("gensim")
+# gensim$models$FastText # check if exists
+
+# ##old conda_install(envname = 'r-reticulate', c('transformers', 'numpy', 'nltk', 'torch'), pip = TRUE, python_version="3.6")
+# ## if reinstall: conda_install(envname = 'r-reticulate', c('gensim'), pip = TRUE, python_version="3.6")
+
+
+
+library(reticulate)
+use_condaenv('r-reticulate', required = T )
+gensim = import("gensim")
+gensim$models$FastText # check if exists
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+freqs2 = freqs %>% filter(term_count_l >= 100 & term_count_r >= 100 & 
+                            (term_count_l >= 200 | term_count_r >= 200) & 
+                            nusers>200) # additional constraints to do sem comparison
+voc = freqs2$term #  3613
+#
+
+leml = lem2[tw$user_id %in% okusers & tw$side == "left"]  %>% as.list() %>% unname() #%>% .[1:100]
+lemr = lem2[tw$user_id %in% okusers & tw$side == "right"] %>% as.list() %>% unname() #%>% .[1:100]
+
+# to get high average alignment, lower dim, lower epocs, high negative sampling seems to work best.
+# increasing mincount is bad, too many epochs bad (overfits?).
+py_run_string(
+  "
+from gensim.models import FastText
+import numpy as np
+from gensim.test.utils import get_tmpfile
+
+modell = FastText(sentences=r.leml, vector_size=50, window=5, workers=8, min_count=5, negative=20, epochs=5)
+
+modelr = FastText(sentences=r.lemr, vector_size=50, window=5, workers=8, min_count=5, negative=20, epochs=5)
+"
+)
+
+vecl = py$modell$wv$vectors_for_all(voc)$vectors %>% normalize("l2")
+vecr = py$modelr$wv$vectors_for_all(voc)$vectors %>% normalize("l2")
+#vecl = scale(vecl, T, F) # mean-centering 
+#vecr = scale(vecr, T, F)
+vecl2 = orthprocr(X=vecl, Z=vecr)$XQ
+
+summary(psim2(vecl2, vecr)) 
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.3583  0.8803  0.9165  0.8977  0.9394  0.9813 
+#0.3046  0.8780  0.9161  0.8965  0.9389  0.9824 
+
+
+rownames(vecl)=voc
+rownames(vecl2)=voc
+rownames(vecr)=voc
+save(vecl, vecl2, vecr, file=file.path(corpusfolder, "followerminer/fixed", "semfast.RData"))
+
+load(file.path(corpusfolder, "followerminer/fixed", "semfast.RData"))
+
+
+showords = function(vecl2, vecr, dir="m", m=1000, n=20){
+  x = psim2(vecl2, vecr)
+  if(dir=="m") {
+    x[freqs2$nusers>m] %>% sort(decreasing = F) %>% head(n) %>% as.data.frame() %>% rownames_to_column() %>% cbind(., freqs2[.$rowname,"nusers"]) 
+  } else {
+    x[freqs2$nusers>m] %>% sort(decreasing = F) %>% head(n) %>% as.data.frame() %>% rownames_to_column() 
+  }
+}
+
+showords(vecl2, vecr, dir="m", m=500, n=50) 
+showords(vecl2, vecr, dir="m", m=1000, n=50)
+showords(vecl2, vecr, dir="m", m=2000, n=50) 
+x = showords(vecl2, vecr, dir="m", m=500, n=20) 
+
+
+psim2(vecl2, vecr)[lex$word] %>% sort
+
+# adding cancel_culture - it shows as similar, but let's see
+freqs[lex$word,] %>% select(nusers) %>% arrange(-nusers)
+
+psim2(vecl2, vecr)[lex$word] %>% sort
+
+
+
+
+#### produce task stims sentences ####
+
+# wil set limits to be min 70; 50+50 for shortened ones
+# length confound, hashtag confound questions
+# should phrase question so sg vs pl etc and capitalization is fine.
+# 10+10 sanity ones should include: sg vs pl, homographs, hashtags, emoji
+# capitalization? if high fraction WAKE UP vs wake up, then sample 2x more, to have both in
+
+library(spacyr); spacy_initialize()
+library(textcat)
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+# stims2$text[textcat(stims2$text)!="english"]
+# x = textcat(stims2$text %>% tolower %>% gsub("[^a-z0-9]"," ",.))
+# table(x) %>% sort
+# stims2$text[x=="scots"]
+
+# manually created lexicon, based on semantics model above:
+lex = read.table("C:/Users/Andres/Dropbox/cudan/medialanguage/stim_lex.txt", sep="\t", encoding="UTF-8", quote='"', na.strings = "NA", header = 1)
+
+
+# load users, add follower numbers below to sample rather from central users if ties
+load(file.path(corpusfolder, "followerminer/fixed", "allusers.RData"))
+
+# filter ok tweets, also clean here a bit so these things wouldn't interfere with the regex (matches pipeline for cleaning/lemmatizing)
+twok = tw %>% 
+  filter(user_id %in% okusers) %>% 
+  filter(nchar(text)>=70) %>% # won't need shorter ones for stims anyway
+  filter(grepl(paste(lex$word %>% gsub("_"," ",.), collapse="|"), text, ignore.case = T)) %>% # first rough filter, should contain target in some form; makes next cleaning steps faster
+  mutate(text = text %>% 
+    str_replace_all(., "[\U1F3FB\U1F3FC\U1F3FD\U1F3FE\U1F3FF\U200D\UFE0F\U203C\U0001F3FC\U0001F3FD\U0001F3FE\U0001F3FB♀♂\U2640\U2642]", " ") %>% # skin tone modifiers and other "invisible" chars
+    gsub("&amp;", " & ", .) %>% 
+    gsub("&[#a-z0-9]{0,5};", " ", ., ignore.case = T) %>%   #various broken html entities
+    gsub("[[:space:]]+", " ",.) %>% 
+    gsub("^[ ]|[ ]$", "",.)  # trailing whitespace
+  ) %>%
+  filter(textcat(text %>% tolower %>% gsub("[^a-z0-9]"," ",.)) %in% 
+           c("english", "scots") ) %>%   # scots is always just english but talking about nature stuff
+  left_join(allusers %>% select(user_id, followers_count), by = "user_id")
+save(twok, file=file.path(corpusfolder, "followerminer/fixed", "dataforstims_cleaned.RData"))
+
+
+# load(file.path(corpusfolder, "followerminer/fixed", "dataforstims_cleaned.RData"))
+
+stims = tibble()
+for(i in 1:nrow(lex)){
+  # [\001-\177] should match unicode emoji, but apparently doesn't always/not super reliable
+  tryCatch({
+    w = lex$word[i]
+    
+    # This version allows plurals and verb endings (which the lemmatizer strips; so, matches preprocessor)
+    if(grepl("_", w)) {  # if compound phrase
+      reg = paste0(
+        "(^|[[:space:]\"“'’()])", gsub("_", " ", w),
+        "($|[^[:alnum:]/-]($|[^#]))"  
+        # here and below, can't be followed by a #hashtag, to exclude long hashtag-only sequences which are different from normal sentences and harder to interpret contextual meaning
+      )
+    } else {
+      reg = paste0(   # base case, but not used, below catches everything
+        "(^|[#[:space:]\"“'’#()])",w,
+        "($|[^[:alnum:]/-]($|[^#]))"
+      )
+      if(is.na(lex[i, "pos1"]) & !grepl("_", w) & (nchar(w) == 1 | w=="🇺🇸" ) ){ # emoji
+        reg = paste0(
+          "(^|[[:punct:][:space:][:alnum:]\"“'’()])",
+          w #,
+          #"($|[[:punct:][:space:]\"”']|[^a-z0-9])" 
+          # special case: emoji example allowed to be after words and directly followed by other emoji without space; but not in the middle of a longer sequence, only target at the start, to avoid confusing stims. 
+        )
+      } else {
+        if(is.na(lex[i, "pos1"]) & !grepl("_", w)) {  # abbreviations and interjections
+          reg = paste0(
+            "(^|[#[:space:]\"“'’()])",w,  
+           # "($|[[:space:]\"”'’!?,;.:()]|[\001-\177])"
+           "($|[^[:alnum:]/-]($|[^#]))"
+          )
+        } else {
+          # cases where tag is not NA:
+          
+          # verbs and nouns; NAs need to be caught above. Must be preceded by space or ^ (to avoid confusing stims, also in preprocessing (incl for semantics model) hypthenated compounds are treated as separate words, so this is more in line with that.
+          if(lex[i, "pos1"] == "V") {  
+            reg = paste0(
+              "(^|[#[:space:]\"”'’()])",w,
+              "(s|ed|ing){0,1}($|[^[:alnum:]/-]($|[^#]))"
+            )
+          } else {
+            if (lex[i, "pos1"] == "N") {  # nouns
+              reg = paste0(
+                "(^|[#[:space:]\"”'’()])",w,
+                "[s]{0,1}($|[^[:alnum:]/-]($|[^#]))"
+              )
+            }
+          }
+        }
+      }
+    }
+    # twok %>% filter(!grepl(reg, text, ignore.case = T) & grepl("vet[s]{0,1}($|[^[:alnum:]/-])", text, ignore.case = T)) %>% pull(text) %>% head(100) %>% write_lines("text.txt")
+    
+    
+    ex1 = twok %>% 
+      filter(grepl(reg, text, ignore.case = T)) %>% 
+      mutate(nc=nchar(text)) %>% 
+      filter(nc >= 70)  
+    tmpchars = ex1$text %>% strsplit("") %>% lapply(function(x) x[x!=" "])
+    ex1$lrat=sapply(tmpchars, function(x){ (sort(table(tolower(x))) %>% tail(2) %>% sum())/length(x)}  )
+    ex1 = ex1 %>% filter(lrat < 0.4) # exclude if tweet has unnaturally high number of repeated letters (often yelling of one elongated word like booooooo)
+    
+    ex1$crat=sapply(ex1$text, function(x){ y=strsplit(x, " ") %>% unlist(F,F) %>% .[-1]; sum(grepl("(^|[“\"#])[A-Z][a-z]",y))/length(y)   } )
+    ex1 = ex1 %>% filter(crat <= 0.5) # exclude if repeated capitals (often lists of names or titles; will exclude some of the every-word-capitalized yelling style and some reported headlines though). Yelling is fine though.
+    
+   #  nrow(ex1)
+    # prefilter: in the end will keep the longest ones, so might as well sample down here a bit by length already to make this faster
+    if(nrow(ex1)>3000){
+      ex1 = ex1 %>% 
+        group_by(user_id) %>% 
+        slice_max(order_by = nc, n = 30) %>% 
+        ungroup()
+    }
+    
+    
+    # Clean examples (not concatenated with other words and emoji) must occur >=20x on both sides
+    # and there must be examples from >=40 users
+    if(ex1 %>% count(side) %>% pull(n) %>% {any(.<20)} | 
+       summarise(ex1, n=n_distinct(user_id))[1,1,drop=T] < 40){ # first stop
+      print(paste("skipping", w, "- not enough data"))
+      next # stop and skip target word if true
+    }
+    
+    # if enough data, examine each example tweet for eligibility
+    tmplist=vector("list", nrow(ex1))
+    for(j in 1:nrow(ex1)){
+      # if(j>1 && is.null(tmplist[[j-1]])){ stop(j-1) }
+      tryCatch({
+      # quick check first:
+      tmp = ex1$text[j] %>% gsub("[^\001-\177]+", "",.) %>% 
+        gsub("(#[[:alpha:]][[:alnum:]]+([ ]|$))+", "",.) %>% 
+        strsplit(" ") %>% unlist(F,F) %>% .[.!=""]
+      
+      tml = tmp %>% length()
+      trl = length(unique(tmp)) / tml
+      tsum = sum(nchar(tmp))
+      tmpchars = ex1$text[j] %>% strsplit("") %>% unlist(F,F) %>% .[.!=" "]
+      tmpcrat = length(unique(tmpchars)) / length(tmpchars)
+      
+      # make sure has words (not just emoji or hashtags repeated) and is not just repeated word:
+      if(tml<10 | trl<0.6 | tsum < 30){ next } 
+      
+      # lemmatize & pos tag
+      # print(paste("j", j))
+      el0 = ex1$text[j] 
+      if(grepl("_", w)){
+        el1 = gsub(gsub("_", " ", w), w, el0 ) # 
+      } else {el1 = el0}
+      
+      # lemmatize only ones with pos tag
+      if(is.na(lex$pos1[i])){ 
+        # skip if missing or too many (except empji)
+        eg = grep(w, el1 %>% strsplit(" "), ignore.case = T)
+        if(nchar(w) < 3){ 
+          if(length(eg)<1){next} 
+          } else {
+            if(length(eg)<1 | length(eg)>2){next} 
+          
+          } 
+      } else {
+        #
+        # lemmatize
+        el = el1 %>% spacy_parse(pos=F,tag=T,lemma=T,entity=F,
+                                 multithread=F, dependency = F, nounphrase = F ) %>% 
+          mutate(tag=substr(tag,1,1)) %>%  # use first tag letter only
+          mutate(lemma=tolower(lemma))
+        
+        eg = which(el$lemma==w | grepl(reg, el$lemma))
+        # hardcoded exception for lit (protected in preprocessing; here tagged as VBN, lemma=light)
+        # now marked as pos=NA so won't be lemmatized
+        # if(w=="lit"){  
+        #   eg = which(grepl("light", el$lemma, ignore.case = T) & 
+        #                grepl("^lit$", el$token, ignore.case = T))
+        # }
+        #
+        # check if between 1-3 times in stim
+        if(length(eg)<1 | length(eg)>3 ){
+          next # if not stop; but emoji can be repeated (above), as they often are.
+        }
+        
+        # for words with predefined tags, check if all tags match --> switched off
+        # if(!(all(el$tag[eg] %in% unlist(lex[i, c("pos1", "pos2"),drop=T])))){
+        #   next # if not skip
+        # }
+      }
+      
+
+        # if all good so far, add to sample
+        w_phrase=gsub("_"," ", w) 
+
+        # good place to clean names and check again double spaces and such:
+        tmp = el1 %>%   # version without _ joining
+          gsub("@[a-zA-Z0-9_]+", " @■■■■■■■ ", .) %>%
+          gsub(">", "〉", .) %>% # so they don't mess with my html parser
+          gsub("<", "〈", .) %>% 
+          gsub("[[:space:]]+", " ",.) %>% 
+          gsub("^[ ]|[ ]$", "",.)  # trailing whitespace
+        # quick split to tokens for shortening calc (keeps punctuation unlike lemmatizer)
+        sent=tmp %>% strsplit(" ") %>% unlist(F,F)
+        
+        # change back here
+        if(grepl("_", w)){
+          sent = gsub(w, w_phrase, sent, ignore.case = T) # back to normal
+        }
+        
+        egx = grep(reg, sent, ignore.case = T)[1]
+        if(is.na(egx)){
+          next # if can't find in sentence, can't underline, skip
+        }
+        cs = cumsum(nchar(sent)) # for length, if needed, before html
+        
+        # add tags, will use css to highlight later
+        # add to target; sub not gsub to only do first sequences with different emoji
+        # also remove repeats (can only be emoji, so if multiple then to single)
+        sent[egx] =  sent[egx] %>%  
+          gsub(paste0( "(",w_phrase,"){1,}(.*)" ),"\\1\\2",.,ignore.case = T ) %>% 
+          sub(paste0( "(",w_phrase,")" ), 
+              paste0("<x>\\1</x>") , 
+              ., ignore.case = T)
+        
+
+        # shorten if needed
+        if(nchar(el1) > 120){
+          xstart=(which(cs>(cs[egx]-60) & cs <= cs[egx])[1])
+          xend = (which(cs<(cs[egx]+60) & cs >= cs[egx]) %>% .[length(.)])
+          #  if(is.null(xstart)|is.null(xend)){stop} # debug
+          
+          sent2=sent[xstart:xend]
+          if(xstart>1){sent2 = c("…", sent2)}
+          if(xend<length(sent)  ){sent2 = c(sent2, "…")}
+          sent3 = paste(sent2, collapse=" ") 
+        } else {sent3=paste(sent, collapse=" ") }
+        
+        
+        
+        tmplist[[j]] = tibble(
+                     text=el1, 
+                     sentence=sent3,
+                     side=ex1$side[j], 
+                     targetword=w,
+                     targetword_phrase=w_phrase,
+                     targetword_pos=paste0(lex$word[i], "_",lex$pos1[i]),
+                     label=lex$label[i],
+                     reg = reg,
+                     user_id=ex1$user_id[j],
+                     user_followers=ex1$followers_count[j],
+                     fulltweet=ex1$text[j],
+                     tweeturl=ex1$status_url[j]
+        )
+      }, error=function(e){print(e)}) 
+    } # 1 word examples loop end
+    tmplist=do.call(rbind,tmplist) # nrow(tmplist)
+    stims = rbind(stims, tmplist)
+    
+    print(paste(Sys.time(), w, nrow(ex1), nrow(tmplist)), quote=F) 
+  }, error=function(e){print(e)})
+  
+}
+
+nrow(stims)
+stims %>% count(label) %>% as.data.frame()
+
+stims2 = stims %>%
+  filter(!duplicated(sentence) & !duplicated(text) & !duplicated(fulltweet)) %>% 
+  mutate(nc = sentence %>% 
+           gsub("(#[[:alpha:]][[:alnum:]]+([ ]|$))+", "",.) %>%  # won't count hashtags (sometimes sequences)
+           gsub("<[^>]+>","",.) %>%
+           gsub("[[:punct:]]|[ …]","",.) %>%
+           nchar()) %>% 
+  # sort sample, prefer examples with more word content (1 tweet from each user)
+  group_by(label) %>% #summarise(n_distinct(user_id))  %>% as.data.frame()
+  mutate(nu = n_distinct(user_id))   %>% 
+  group_by(user_id) %>% 
+  arrange(nu, -nc, .by_group = T) %>% # optimize: 1 per user, but leave more data for smaller samples (per target), if equal prefer longer tweets.
+  slice(1) %>%     # ungroup() %>%  count(label) %>% arrange(-n) %>% as.data.frame()
+  group_by(side, targetword_pos) %>% filter(n()>=20) %>%  # but doublechecked below it's 40 total
+  arrange(-nc, -user_followers, .by_group = T) %>%  # prefer longer and if ties then central users; since long tweets are shortened, this assures more or less similar stim lengths
+  slice(1:20) %>% 
+  select(-nc) %>% 
+  group_by(targetword_pos) %>% filter(n()==40) %>% 
+  ungroup() %>% 
+  arrange(label, side)
+
+
+nrow(stims2)
+stims2 %>% count(targetword_pos) %>% as.data.frame()
+table(stims2$user_id) %>% sort %>% tail
+setdiff(unique(stims$targetword),unique(stims2$targetword)) #
+setdiff(lex$word,unique(stims2$targetword))
+
+save(stims, stims2, file=file.path(corpusfolder, "stims.RData")) # 34561 total
+# sleepnow()
+
+# stims2 %>% group_by(targetword_pos, side) %>% count %>% pull(n) %>% {all(.==20)}
+
+# stims2 %>% arrange(nchar(sentence)) %>% head %>% pull(sentence)
+  
+
+#### stims images generator ####
+
+load(file.path(corpusfolder, "stims.RData"))
+
+library(chromote)
+library(stringi)
+library(jsonlite)
+
+# x=stims$sentence[order(nchar(stims$sentence%>% gsub("<[^>]+>", " ",.)), decreasing = T)[2]]  %>% gsub("<[^>]+>", " ",.)
+
+# 20 * 3 paari. 
+# nt blm 20-20 parem-vasak, 10 vs 10 vasak, sama parem
+((20 + 10 + 10) * 30) * 3 * 0.3
+# - 30 cents for 10;  2 cents per extra example
+
+
+# sanity ones
+# # 10+10 sanity ones should include: sg vs pl, homographs, hashtags, emoji
+sanity=tribble(
+  ~side, ~controlpair, ~sentence, 
+  "sanity0", "1", "I saw a lone <x>duck</x> swimming on the pond, such colorful feathers",
+  "sanity0", "1", "… it's like the old cold war drills, telling people to <x>duck</x> and cover under a table",
+  "sanity0", "2", "My <x>dog</x> is awesome, I love this little furball 😂😂😂",
+  "sanity0", "2", "… the technically superior American aircraft shot down a number of aircraft during aerial <x>dog</x> fights over Europe. #warplanes #WW2 #dogfights",
+  "sanity0", "3", "I was going through the <x>content</x> and I gotta say... it's not bad",
+  "sanity0", "3", "he wasn't exactly happy with the boss but was still <x>content</x> to go on with it. It's not too bad actually.",
+  "sanity0", "4", "I lost my <x>lighter</x>, how the hell am I supposed to go on being a chainsmoker now??😂",
+  "sanity0", "4", "I have a <x>lighter</x> work load now, so I should be able to find time for this yeah",
+  "sanity0", "5", '"For whom the bell <x>tolls</x>" is still an absolute classic song',
+  "sanity0", "5", "One thing though: road <x>tolls</x> suck. why the hell do I need to pay toll for driving on a road, I already pay for gas?! #crazy",
+  "sanity100", "11", "MY <x>DOG</x> IS AWESOME, I love this guy 😂",
+  "sanity100", "11", "His <x>dog</x> is soo cute, I Love This Guy 🤣",
+  "sanity100", "12", "My <x>co-worker</x>s were teasing me yesterday because I ate a hot dog and then ate some broccoli and cauliflower right after",
+  "sanity100", "12", "My <x>co-worker</x> was teasing me yesterday because I ate a hot dog and then ate some broccoli and cauliflower right after",
+  "sanity100", "13", "Get yourself a cup of hot chocolate and grab some <x>🍩</x> 🍩 🍩 #sunday #donuts",
+  "sanity100", "13", "I just felt like eating a <x>🍩</x> today, so I did",
+  "sanity100", "14", "It was a gift for my #<x>birthday</x> 😁 and I adore it",
+  "sanity100", "14", "Can't wait for my <x>birthday</x>, its gonna be amazeballs",
+  "sanity100", "15", "… wanted to love #ArmyOfTheDead, but Nah. there's a great <x>Movie</x> in there somewhere but at two and a half hours it becomes a mishmash of …",
+  "sanity100", "15", "… I had no idea what was going on. I watch <x>movie</x>s regularly but I just could not follow the plot here …"
+) 
+
+stims3 = bind_rows(stims2, sanity %>% mutate(label="sanity")) %>% 
+  mutate(id=1:nrow(.), filename = 
+           paste0(paste(id, label, side, controlpair, sep="-"), ".png"))
+nrow(stims3)
+count(stims3, side)
+
+
+b <- ChromoteSession$new()
+for(i in 1:nrow(stims3)){
+  x = stims3$sentence[i]
+  # font-weight:bold;
+  # text-underline-position: under;
+  # text-decoration:underline;
+  # text-decoration-color: green;
+  # text-decoration-thickness: 2px;
+  xhtml = paste0(
+    "<html>
+<head>
+<meta charset='UTF-8'>
+<style>
+  x {
+  text-underline-position: under;
+  text-decoration:underline;
+  text-decoration-color: #4820a1;
+  font-weight:bold;
+  background-color: #e3d6ff;
+  text-decoration-thickness: 2px;
+}
+body {
+  color:black;
+  font-family: Arial, Helvetica, sans-serif;
+  max-width: 400px;
+  background-color: white; 
+  margin: 2 2;
+  line-height: 150%;
+}
+</style>
+</head>
+<body>
+",
+x,
+"
+</body>
+</html>"
+  )
+  
+  stri_write_lines(xhtml, "test.html")
+  b$Page$navigate("C:/Users/Andres/Documents/test.html")
+  b$screenshot(file.path("C:/Users/Andres/korpused/twitter/stims",
+                         stims3$filename[i]
+                         ), 
+        selector = "body", delay = 0, cliprect=c(x=0, y=0, width=405, height=100), scale=2, show=F)
+  
+}
+
+stims3 %>% select(id, targetword,targetword_pos, label, filename,side,sentence, text) %>% as.data.frame() %>%  write_json("C:/Users/Andres/korpused/twitter/stims.json", pretty = TRUE)
+
+stims3 %>% select(id, targetword,targetword_pos, label, filename, side,sentence, text, fulltweet, user_followers, tweeturl) %>% as.data.frame() %>%  write_csv("C:/Users/Andres/korpused/twitter/stims.csv")
+
+# sleepnow()
+
+
+
+
+
+
+
+#### probe semantics ####
+
+leml = lem2[tw$user_id %in% okusers & tw$side == "left" & nchar(tw$text)>=50]  %>% as.list() %>% unname()
+lemr = lem2[tw$user_id %in% okusers & tw$side == "right"& nchar(tw$text)>=50] %>% as.list() %>% unname()
+texl = tw[tw$user_id %in% okusers & tw$side == "left"& nchar(tw$text)>=50,]
+texr = tw[tw$user_id %in% okusers & tw$side == "right"& nchar(tw$text)>=50,]
+for(i in seq_along(lex)){
+  x = which( sapply(leml, function(x) lex[i] %in% x)  )
+  extl = texl$text[x] %>% 
+    .[grepl( paste0("(^|[[:space:][:punct:]])", lex[i], "($|[[:space:][:punct:]])"),.) ] %>% .[!grepl(paste0( "(&amp;", lex[i], ")|(", lex[i], "&amp;)" ),.)]
+  exr
+  
+}
+
+# example: marxist almost NO freq in left (14), but freq in right (396 tweets). so can't do sem, but probably matters.
+
+sim2(vecl, vecl["maga",,drop=F])[,1] %>% sort() %>% tail
+sim2(vecr, vecr["maga",,drop=F])[,1] %>% sort() %>% tail
+sim2(vecl["woke",,drop=F], vecr["woke",,drop=F])
+sim2(vecl["vet",,drop=F], vecr["vet",,drop=F])
+p = psim2(vecl, vecr)
+
+freqs2$psim = psim2(vecl2[freqs2$term,], vecr[freqs2$term,])
+
+freqs2 %>% arrange(psim) %>% head(20)
+freqs2["maga",]
+
+# divergence and freq not independent, take residual instead, so "more different than expected"
+ggplot(freqs2 , aes(log2dif, psim, label=term)) + #fnlm
+  geom_point(size=0.5, alpha=0.2)+
+  #geom_text(size=3)+
+  geom_smooth(method="lm", formula = "y~poly(x,6)")+
+  labs(y="cosine self-similarity", x="mean log frequency")+
+  ylim(c(0,1))+
+  NULL+
+  ggplot(freqs2 , aes(fnlm, psim, label=term)) + 
+  geom_point(size=0.5, alpha=0.2)+
+  #geom_text(size=3)+
+  geom_smooth(method="lm", formula = "y~poly(x,6)")+
+  labs(y="cosine self-similarity", x="mean log frequency")+
+  ylim(c(0,1))+
+  NULL
+# freqs %>% arrange(fnlm) %>% tail(40)
+
+cor(freqs2$fnlm, freqs2$psim) # 0.505 with procrustes
+# eval: simlex, self-similarity, selfsim vs freq correlation, and if possible experiment.
+
+
+
+# compare to some nondiv within embedding
+# or just compare top associations apsyn style
+
+
+
+
+
+
+
+#### old fasttext, continue-training; use for doc2vec?  ####
+
+# install_miniconda(update = T, force=T)
+# py_config()
+# py_version()
+library(reticulate)
+use_condaenv('r-reticulate', required = T )
+gensim = import("gensim")
+gensim$models$FastText # check if exists
+#  ##old conda_install(envname = 'r-reticulate', c('transformers', 'numpy', 'nltk', 'torch'), pip = TRUE, python_version="3.6")
+# if reinstall: conda_install(envname = 'r-reticulate', c('gensim'), pip = TRUE, python_version="3.6")
+# import("torch")
+# --> spacy initialization imports python, conflicts with this one, don't load both! <---
+# py_run_string("print(r.lemtest[0])")
+#  py$x # or py_eval("x")
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+#
+modelpath = "C:/Users/Andres/korpused/twitter/model/bmodel2"
+# load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+
+
+
+# train full model
+basecorpus = c(lem2 %>% as.list() %>% unname(), # make sure to unname
+            extracorpus %>% as.list() %>% unname()
+            )
+py_run_string(
+  "
+from gensim.models import FastText
+import numpy as np
+from gensim.test.utils import get_tmpfile
+
+#print(corp[0])
+bmodel = FastText(sentences=r.basecorpus, vector_size=200, window=2, workers=15, min_count=5, epochs=100)
+bmodel.save(r.modelpath) 
+"
+)
+Sys.time()
+rm(basecorpus)
+
+
+# retrain, divergent models
+# modelpath = "C:\\Users\\Andres\\AppData\\Local\\Temp\\tmpaslj6cfm\\bmodel" # first test
+# py_load_object("basemodel.pickle") # doesn't seem to work, using native pickle
+
+epochtest = function(epochs = c(1,5,10,15,20,25)){ 
+  # will call objects from global bc reticulate does so anyway
+  # save in global so reticulate can access. super important to unname, otherwise becomes a dict.
+  leml <<- lem2[tw$user_id %in% okusers & tw$side == "left"]  %>% as.list() %>% unname() #%>% .[1:100]
+  lemr <<- lem2[tw$user_id %in% okusers & tw$side == "right"] %>% as.list() %>% unname() #%>% .[1:100]
+  voc <<- freqs$term # voc = table(unlist(c(leml, lemr), F,F)) %>% .[.>4] %>% names()
+  sims = vector("list", length(epochs))
+  lvlist = sims; rvlist=sims
+  py_run_string("
+from gensim.models import FastText
+import numpy as np
+import copy
+leml = r.leml
+lemr = r.lemr
+")
+py_run_string("
+if 'bmodel' in locals():
+    print('model loaded already')
+else:
+    print('loading model')
+    bmodel = FastText.load(r.modelpath)
+#
+")
+  for(ep in seq_along(epochs)){
+    print(paste(Sys.time(), ep))
+    pyep <<- epochs[ep] %>% as.integer()
+    py_run_string("
+print(r.pyep)
+lmodel = copy.deepcopy(bmodel)
+lmodel.build_vocab(leml, update=True)
+lmodel.train(leml, total_examples=len(leml), epochs=r.pyep)
+#
+rmodel = copy.deepcopy(bmodel)
+rmodel.build_vocab(lemr, update=True)
+rmodel.train(lemr, total_examples=len(lemr), epochs=r.pyep)
+")
+    lv = sapply(voc, function(x) py$lmodel$wv$get_vector(x)) %>% t()
+    rv = sapply(voc, function(x) py$rmodel$wv$get_vector(x)) %>% t()
+    ps = psim2(lv, rv) %>% {names(.)=voc;.}
+    print(summary(ps))
+    sims[[ep]] = ps
+    lvlist[[ep]] = lv
+    rvlist[[ep]] = rv
+    # cleanup
+    rm(lv,rv)
+    py_run_string("
+del(rmodel)
+del(lmodel)
+    ")
+  }
+ bv = sapply(voc, function(x) py$bmodel$wv$get_vector(x)) %>% t()
+ return(list(sims=sims,lvlist=lvlist, rvlist=rvlist, bv=bv)  )
+}
+
+
+sims = epochtest(epochs = seq(10,100,10) )
+save(sims, file="C:/Users/Andres/korpused/twitter/model/sims4_2.RData")
+sleepnow()
+
+
+## figure out which is the optimal model ##
+#
+# compare sims, find nearest neighbour, % of for how many nearest changes
+
+load("C:/Users/Andres/korpused/twitter/model/sims4_2.RData")
+
+neibstats = function(sims, freqs){
+  voc = freqs$term 
+  neibstat = tibble() #m=m, i5=rep(NA, length(voc), i10=NA)) #data.frame(epochs = c(1,5,10,15,20,25), same=NA)
+  neiblist = vector("list", nrow(neibstat))
+  for(m in seq_along(sims$lvlist)){
+      tmp = sim2(sims$lvlist[[m]])
+      diag(tmp)=-Inf
+      ln = apply(tmp,1, function(x) order(x,decreasing=T))
+      #
+      tmp = sim2(sims$rvlist[[m]])
+      diag(tmp)=-Inf
+      rn = apply(tmp,1, function(x) order(x,decreasing=T))
+      #rn = voc[apply(tmp, 1, which.max)]
+      # neiblist[[m]] = ln==rn
+      ns = tibble(term=voc, m=m, i5=rep(NA, length(voc), i10=NA))
+      for(i in 1:length(voc)){
+        #intr[i] = length(intersect(ln[,i], rn[,i]) )
+        ns$i5[i] =  length(intersect(ln[1:5,i], rn[1:5,i]) )/5
+        ns$i10[i] = length(intersect(ln[1:10,i], rn[1:10,i]))/10
+      }
+      neiblist[[m]] = ln[1,]==rn[1,]
+      #names(neiblist[[m]]) = voc
+      #neibstat$same[m]=sum(neiblist[[m]])
+  
+      #ns = ns %>% summarise(m=first(m), i5=mean(i5, na.rm=T), i10=mean(i10, na.rm=T)) %>% mutate(i1 = sum( neiblist[[m]] )/length(voc))
+      ns$i1 = as.numeric(neiblist[[m]])
+      neibstat=rbind(neibstat, ns)
+  }; rm(tmp)
+  neiblist = do.call(rbind, neiblist)
+  colnames(neiblist)=voc
+  #neibstat %>% group_by(term) %>% summarise(md=mean(i10), i1=all(i1==0)) %>% filter(i1) %>% arrange(md) %>% head(20)
+  ntmp = neiblist[,apply(neiblist, 2, function(x) any(!x))]
+  #ntmp = neiblist[,apply(neiblist, 2, function(x) all(!x))]
+  #dim(ntmp)
+  wf = freqs %>% filter(term_count_l >=100 & term_count_r >=100 & term %in% colnames(ntmp)) 
+  wf$simmean = sapply(1:length(sims$lvlist), 
+    function(x) psim2(sims$lvlist[[x]][wf$term,], sims$rvlist[[x]][wf$term,])) %>% rowMeans()
+  wf$simfinal = psim2(sims$lvlist[[length(sims$lvlist)]][wf$term,], 
+                      sims$rvlist[[length(sims$lvlist)]][wf$term,])
+  wf = left_join(wf, neibstat %>% filter(m==length(sims$lvlist)), by="term")
+  attr(wf, "neibstat")=neibstat
+  return(wf)
+}
+wf = neibstats(sims, freqs)
+neibstat=attr(wf, "neibstat")
+wf$sim90 = psim2(sims$lvlist[[9]][wf$term,], sims$rvlist[[9]][wf$term,])
+
+wf %>% arrange(simmean) %>%  head(20) %>% pull(term)
+wf %>% arrange(sim90) %>%  head(20)  %>% pull(term)
+wf %>% arrange(i10, sim90) %>%  head(20)  %>% pull(term)
+
+# hmm lihtsalt sim ei tööta, sest density on erinev - kui hõredas alas siis suur muutus suva, sest lähimad (kauged) naabrid võivad suht samad olla. peaks olema mingi density residuals äkki, või nn10 vms.
+m=9; w="wake_up" ;sim2(sims$lvlist[[m]], sims$lvlist[[m]][w,,drop=F])[,1] %>% sort(decreasing = T) %>% head(7) %>% names();sim2(sims$rvlist[[m]], sims$rvlist[[m]][w,,drop=F])[,1] %>% sort(decreasing = T) %>% head(7) %>% names()
+
+ggplot(neibstat  %>% reshape2::melt(id.vars=c("m", "term")),
+       #%>% group_by(m) %>% summarise(), 
+       aes(m,value, group=m))+
+  #geom_point()+geom_line()+
+  geom_violin()+
+  stat_summary(geom="point", fun="median")+
+  stat_summary(geom="point", fun="mean", color="red")+
+  facet_wrap(~variable)
+
+sms = sapply(1:length(sims$lvlist), 
+       function(x) psim2(sims$lvlist[[x]][freqs$term,], sims$rvlist[[x]][freqs$term,]) %>% mean() )
+plot(sms)
+plot(sms-lag(sms))
+
+
+
+
+
+ggplot( data.frame(same=neiblist[[5]], f=freqs[voc, "frn"] %>% log), aes(same, f))+geom_violin()+geom_boxplot(varwidth=T) # none correlates with freq, good
+
+
+
+
+
+s = do.call(rbind, sims$sims)
+plot(colMeans(s), apply(s, 2, sd))
+data.frame(s=s[3,freqs$term[freqs$ok]], f=freqs$frn[freqs$ok] %>% log) %>% 
+  ggplot(aes(s,f))+
+  geom_point(size=0.1)+
+  geom_smooth(method="lm")
+
+
+
+
+
+
+#### accounts plot ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "accounts.RData"))
+
+# sapply(accounts$path, function(x) read_csv(x) %>% nrow() ) %>% sum() # 422607872 total
+# 
+# 
+
+barcols=hcl.colors(palette="Blue-Red 2", n = 5, rev = F) %>% lighten(0.2)
+labcols = barcols %>% darken(0.85) #%>% show_col()
+xl={accounts %>% filter(side=="left") %>% nrow}+0.45
+xr={accounts %>% filter(!(side %in% c("leanright", "right")) ) %>% nrow}+0.55
+xlc=barcols[1]
+xrc =barcols[5]
+
+ggplot(accounts, # %>% filter(acc=="huffpost"), 
+       aes(fill=side, x=reorder(acc, as.numeric(side), mean), y=followers_count, label=name))+
+  #geom_bar(stat="identity", alpha=0.5, position="stack")+
+  #geom_bar(aes(fill=acc, x=side), stat="identity", alpha=0.5, position="stack")+
+  geom_hline(yintercept =  c(10^c(4:7)), color="gray70", size=0.1)+
+  geom_bar(aes(y=followers_count), stat="identity",position="dodge", alpha=0.8, color=NA)+
+  #geom_bar(aes(y=unique), stat="identity",position="dodge", alpha=0.5)+
+  annotate("text", x=xl,y=Inf, vjust=1.1, hjust=1.03, label='the "left" side sample <', color=xlc)+
+  annotate("text", x=xr,y=Inf, vjust=1.1, hjust=-0.03, label='> the "right" side sample', color=xrc)+
+  geom_text(aes(color=side), size=2.8, vjust=0.5, hjust=1.05, angle=90)+
+  geom_vline(xintercept = xl, size=1 )+
+  geom_vline(xintercept = xr, size=1 )+
+  scale_y_log10(breaks = c(10^c(4:7), 50000000),#  trans_breaks("log10", function(x) 10^x),
+                labels = c("10k", "100k", "1mln", "10mln", "50mln"),   # trans_format("log10", math_format(10^.x)),
+                expand=c(0,0),
+                sec.axis = sec_axis(~.,breaks = 10^c(4:7), labels=NULL) 
+  )+
+  annotation_logticks(sides="lr", size=0.2,
+                      short = unit(.5,"mm"),
+                      mid = unit(1,"mm"),
+                      long = unit(2,"mm"))   +
+  coord_cartesian(ylim=c(10000,55000000))+
+  
+  scale_fill_manual(values=barcols)+
+  scale_color_manual(values=labcols)+
+  labs(y= expression(Follower~count~~"("*log[10]*")" ), 
+       subtitle="422,607,872 follower listings across 72 accounts (2021)")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        #panel.grid.minor.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.length = unit(0, "cm"),
+        axis.text.x = element_text(angle=90, hjust=1, vjust=0.5),
+        axis.title.x = element_blank(),
+        plot.margin = margin(0.03,0.02,0.02,0.03),
+        panel.border = element_blank(),
+        axis.line.y = element_line(size=0.1),
+        plot.background = element_rect(color="white", fill="white")
+  )
+
+#ggsave("accounts.png",scale=0.5, width = 1000*5, height = 400*5, units="px")
+ggsave("accounts.pdf", width = 9, height = 3)
+
+
+
+#### frequency comparison ####
+
+# peaks tegema tegelikult mitte sagedus vaid tviitide arv, muidu emojid buustiga.
+library(ggflags)
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+
+
+freqs1 = freqs %>% filter(#notname &
+        (term_count_l >= 200 | term_count_r >= 200 | (term_count_l+term_count_r)>=300) & 
+          nusers>200 &   # ratio filter already in preprocessing
+          fnlm<8.21    # leave super frequent stuff out of plot, just stopwords, boring
+        ) %>% 
+  mutate(nusersp = nusers/length(okusers)*100) %>% 
+  filter(nusersp<40) %>% 
+  #mutate(sizemult = log2dif_doc*(1/nusers) ) %>% 
+  mutate(sizemult = scale(abs(log2dif_doc))[,1] + (scale(nusers)[,1]*50)  ) %>% 
+  mutate(big=case_when(
+    (abs(log2dif_doc)>1.9 & term!="🇺🇸") | term=="😂"  ~ T,  # filter example labels a bit
+    T~F
+  )
+) %>% 
+  mutate(term=case_when(term=="nigga"~"n*gga", T~term)) %>% 
+  mutate(term=gsub("_","\n",term)) %>% 
+  filter(term!="🥲") 
+#dim(freqs1)
+
+
+
+g=comparisonplot(freqs1, xvar="log2dif_doc", ymx=40)
+ggsave("frequency.png",g,scale = 0.4, width = 1000*5, height=550*5, units = "px" )
+#ggsave("C:/Users/Andres/Dropbox/cudan/medialanguage/freq2.jpeg",g,scale = 0.6, width = 1000*5, height=600*5, units = "px" )
+
+
+
+
+
+# quick check at how reduplicative emoji are
+tmp  = lem2 %>% dfm() %>% 
+  dfm_trim(min_termfreq = 200)
+sum(tmp[,"😂"]>1) / sum(tmp[,"😂"]>0)
+median(tmp[,nchar(colnames(tmp)) %in% 2:3] %>% {colSums(.>1) / colSums(.>0)})
+median(tmp[,nchar(colnames(tmp)) > 3] %>% {colSums(.>1) / colSums(.>0)})
+
+
+
+
+#### semantics for topic model and frequency comparison ####
+library(reticulate); use_condaenv('r-reticulate', required = T )
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+freqs3 = freqs %>% filter(nusers>200) 
+voc = freqs3$term #  5420
+#
+
+lem3 = lem2[tw$user_id %in% okusers]  %>% as.list() %>% unname()
+
+py_run_string(
+  "
+from gensim.models import FastText
+import numpy as np
+from gensim.test.utils import get_tmpfile
+
+modell = FastText(sentences=r.lem3, vector_size=50, window=5, workers=3, min_count=5, negative=20, epochs=10)
+"
+)
+vecs = py$modell$wv$vectors_for_all(voc)$vectors 
+rownames(vecs)=voc
+ud = umap.defaults;ud$min_dist=0.8
+umsem = umap(vecs, config = ud)$layout
+
+fullvecs = py$modell$wv$vectors_for_all( py$modell$wv$index_to_key )$vectors 
+rownames(fullvecs)=py$modell$wv$index_to_key
+save(vecs,fullvecs, umsem, file=file.path(corpusfolder, "followerminer/fixed", "jointvecs.RData"))
+
+
+##### plot topics ####
+# doc2vec topic model #
+
+library(doc2vec)
+load(file.path(corpusfolder, "followerminer/fixed", "jointvecs.RData"))
+
+tweetframe = lem2 %>% as.list() %>% .[tw$user_id %in% okusers] %>% 
+  {data.frame(doc_id=names(.), 
+              text=sapply(., paste, collapse=" "), 
+              user = tw$user_id[tw$user_id %in% okusers], 
+              side=tw$side[tw$user_id %in% okusers])}
+rownames(tweetframe)=tweetframe$doc_id
+twvecs = paragraph2vec(tweetframe[, 1:2], threads=8, embeddings=fullvecs, dim=50, iter=20) %>% 
+  as.matrix(which = "docs")
+
+tweetframe[30000,"text"]
+tweetframe[sim2(twvecs,twvecs[30000,,drop=F])[,1] %>% sort(decreasing = T) %>% head() %>% names(),"text"]
+save(tweetframe,twvecs, file="C:/Users/Andres/korpused/twitter/model/doc2vec_tmp.RData")
+# uservecs = vector("list", length(okusers))
+# for(i in seq_along(okusers)){
+#   uservecs[[i]] = twvecs[tw %>% filter(user_id==okusers[i]) %>% pull(status_id),,drop=F] %>% colMeans()
+# }
+# uservecs = do.call(rbind, uservecs); rownames(uservecs)=okusers
+
+load("C:/Users/Andres/korpused/twitter/model/doc2vec_tmp.RData")
+library(reticulate); use_condaenv('r-reticulate', required = T )
+
+twumap = umap(twvecs, method = "umap-learn")$layout
+twumap = cbind(tweetframe, twumap %>% as.data.frame())
+twumap2 = twumap %>% filter(V1> -4.5, V1<5.5, V2>-4.5, V2< 6.8)
+twumap2 = twumap2 %>% filter(V1> -4.3, V1<5.2, V2>-4.2, V2< 6.23)
+#save(twumap2, file="C:/Users/Andres/korpused/twitter/model/doc2vecUMAP2.RData")
+
+
+
+library(dbscan)
+# kNNdistplot(twumap %>% filter(V1> -4.5, V1<5.5, V2>-4.5, V2< 6.8) %>% select(V1, V2) %>% as.matrix(), 1000)
+# twclust = dbscan(twumap2 %>% ungroup %>% select(V1, V2) %>% as.matrix(), minPts = 4, eps = eps[i])
+
+twumaptmp = twumap2
+eps = c(0.006, 0.008, 0.01)
+res = tibble()
+for(i in seq_along(eps)){
+  twtmp = twumaptmp %>% ungroup %>% select(V1, V2) %>% as.matrix()
+  tmp = dbscan(twtmp, minPts = 4, eps = eps[i])
+  cltmp = tmp$cluster %>% as.character() 
+  twumaptmp$cl = cltmp %>% paste0(.,"_",i)
+  tcl = table(tmp$cluster)
+  res=rbind(res, twumaptmp[which(cltmp %in% 
+                               names(tcl)[tcl >= 1000 & tcl <= 100000 & names(tcl)!="0" ]),] %>% mutate)
+  twumaptmp = twumaptmp[which(cltmp %in% 
+                                names(tcl)[tcl < 1000 | tcl > 100000 | names(tcl)=="0" ] ),]
+}
+nrow(res)
+twumap3 = rbind(res, # %>% mutate(cl=case_when(cl %in% c("57_1","103_3")~NA_character_, T~cl ) ), 
+                twumap2 %>% 
+                  filter(!(doc_id %in% res$doc_id)) %>% mutate(cl=NA_character_) 
+                ) %>% left_join(tw %>% select(status_id, text) %>% 
+                                  rename(fulltext=text, doc_id=status_id), by="doc_id")
+nrow(twumap3) == nrow(twumap2)
+table(twumap3$cl) %>% sort
+
+
+# table(twclust$cluster) %>% .[.>=1000] %>% length
+# twumap2 = twumap2 %>% ungroup %>% mutate(cl=twclust$cluster) %>% 
+#   group_by(cl) %>% 
+#   mutate(cl=case_when(n()<=700 | cl==0 ~ NA_character_, T~as.character(cl)))
+# twclust = kmeans(twumap %>% filter(V1> -4.5, V1<5.5, V2>-4.5, V2< 6.8)  %>%  select(V1, V2) %>% as.matrix() %>% round(5), 50, iter.max = 500, algorithm="MacQueen")
+# twumap2 = twumap %>% filter(V1> -4.5, V1<5.5, V2>-4.5, V2< 6.8) %>% mutate(cl=twclust$cluster %>% as.character()) #%>% mutate(cl=case_when(cl < 2 ~ NA_integer_, T~cl))
+
+
+# keywords
+twmat = twumap3 %>%  pull(text) %>% tokens %>% 
+  dfm() %>% 
+  dfm_trim(min_termfreq = 500) %>% 
+  dfm_remove( max_nchar=15, 
+             pattern="[\"'°,.;:=?!¤%&/()-]|^[a-z]{1,2}$|_[ts]$", valuetype="regex") %>% 
+  dfm_remove(c(stopwords("spa"), stopwords("en")))  %>% 
+  dfm_weight("boolean") # otherwise emojis dominate
+docvars(twmat, field="doc_id") = twumap3$doc_id
+docvars(twmat, field="cl") = twumap3$cl
+twmat=twmat[!is.na(twumap3$cl), ]
+twmattf = dfm_group(twmat,cl) %>% dfm_tfidf(force=T)
+tops = topfeatures(twmattf, groups = cl, n = 20)
+
+# save(twumap2, twumap3,twmattf,twmat, tops, file="C:/Users/Andres/korpused/twitter/model/doc2vecUMAP2.RData")
+
+
+load("C:/Users/Andres/korpused/twitter/model/doc2vecUMAP2.RData")
+
+
+twkeywordmap = twumap3 %>% filter(!is.na(cl)) %>% 
+  mutate(right=as.numeric(side=="right")) %>% 
+  group_by(cl) %>% 
+  summarise(V1=mean(V1), V2=mean(V2), n=round(log2(n())-8), side2=sum(right)/n()) %>% 
+  mutate(keywords = tops[cl]) %>%  
+  unnest_longer(keywords ) %>% 
+  group_by(cl) %>%  arrange(-keywords, .by_group = T) %>%  mutate(ind = 1:n()) %>% ungroup() %>% 
+  group_by(keywords_id) %>% arrange(ind, .by_group = T) %>% slice(1) %>% ungroup() %>% 
+  arrange(cl) %>% arrange(-keywords, .by_group = T) %>% 
+  group_by(cl) %>% slice(1:n[1]) %>% 
+  mutate(size=rescale(n():1, c(0.1,1)) + n[1]) %>% 
+  mutate(size=case_when(nchar(keywords_id)==1 ~ size*0.3, T~size)) %>%  # emoji print size mod
+  mutate(keywords_id=gsub("_","\n",keywords_id)) %>%    # phrases
+  mutate(size=case_when(cl %in% c("57_1", "100_3")~size*0.7, T~size)) # corner too big
+nrow(twkeywordmap)
+
+g=ggplot(twumap3
+         , aes( -V1, V2))+ 
+  geom_vline(xintercept=mean(c(min(-twumap3$V1), max(-twumap3$V1))), size=0.1, color="gray70" )+
+  geom_hline(yintercept=mean(c(min(twumap3$V2), max(twumap3$V2))), size=0.1,  color="gray70" )+
+  geom_point(aes(fill=side), alpha=0.4, shape=21, color="transparent", stroke=0, size=0.2)+
+  geom_text_repel(aes(label=keywords_id, size=size, color=side2), data=twkeywordmap,  box.padding = 0, min.segment.length = 9999, max.time = 5, max.overlaps = 1000000, direction = "both", segment.size=unit(0,"mm"), segment.alpha=0, lineheight=0.45)+
+  theme_bw()+
+  scale_size(range=c(1.4,3.4))+
+  coord_cartesian(expand = F)+
+  labs(title="(a) 1,483,385 tweets by 10,986 US users; February-September 2021 (blue: from left-aligned users; red: right-aligned)")+
+  #scale_y_continuous(expand = expansion(add=0.1))+
+  #scale_x_continuous(expand = expansion(add=0.1))+
+  theme(
+    plot.title = element_text(size=7, margin=margin(1,0,1,0)),
+        panel.grid = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank(),
+        axis.ticks.length = unit(0, "null"),
+        plot.margin = margin(1,1,1,1, unit="pt"),
+        panel.spacing = unit(0, "pt"),
+        legend.position = "none",
+        #legend.direction="horizontal",
+        legend.key.width=unit(30,"pt"),
+        legend.background = element_rect(color=NA, fill=NA),
+        legend.box.just = "right",
+        legend.title = element_blank()
+  )+
+  #scale_fill_manual(values=c("#4A6FE3", "#DB6581"))+
+  scale_fill_manual(values=c("#007bff", "#e85d5d"))+
+  scale_color_gradientn(colors=diverging_hcl(11, palette = "Blue-Red") %>% .[c(1,2,3,10,11)] %>% {.[3]="gray40";.} , limits=c(0.1,0.9))+
+  NULL
+
+ggsave("tweetmap.png",
+       g+plot_annotation(theme=theme(plot.margin=margin(0,0,0,0)))+
+         inset_element(p=si, left = 0,right = 0.165,bottom =0, top=0.16, align_to = "panel")+plot_annotation(theme=theme(plot.margin=margin(0,0,0,0)))
+       , scale = 0.4, width = 1000*5, height= 650*5, units = "px") # keywords for min 1000 clusters
+
+
+##### sentiment inset ####
+load(file.path(corpusfolder, "followerminer/fixed", "tweetsentiment.RData"))
+
+sentmap = left_join(twumap3, twsent %>% rename(doc_id=status_id) %>% select(sent, doc_id), by="doc_id")
+sentmapc = sentmap %>% ungroup %>% mutate(V1=-V1) %>%  mutate(V1=cut(V1, breaks=50*1.5, include.lowest=T), V2=cut(V2, breaks=29*1.5,include.lowest=T)) %>% group_by(V1, V2) %>% 
+  summarise(sent=mean(sent), n=n()) %>% mutate(sent=na_if(sent, n<5000))
+
+si = ggplot(sentmapc, aes( V1, V2, alpha=n))+ 
+  geom_tile(aes(fill=sent), color="transparent", size=1)+
+  geom_vline(xintercept= levels(sentmapc$V1)[ceiling(length(levels(sentmapc$V1))/2)], size=0.05, color="gray50"  )+
+  geom_hline(yintercept= levels(sentmapc$V2)[ceiling(length(levels(sentmapc$V2))/2)], size=0.05, color="gray50" )+
+  #geom_text_repel(aes(label=keywords_id, size=size, color=side2), data=twkeywordmap,  box.padding = 0, min.segment.length = 9999, max.time = 5, max.overlaps = 1000000, direction = "both", segment.size=unit(0,"mm"), segment.alpha=0, lineheight=0.45)+
+  annotate("shadowtext", -Inf, Inf,hjust=-0.01,vjust=1.2, label="(b) Sentiment", size=2.5, color="black", bg.color="white")+
+  scale_alpha(range=c(0.9,1))+
+  theme_bw()+
+  scale_size(range=c(1.4,3.4))+
+  coord_cartesian(expand = F)+
+  #scale_y_continuous(expand = expansion(add=0.1))+
+  #scale_x_continuous(expand = expansion(add=0.1))+
+  theme(
+    #plot.title = element_text(size=7, margin=margin(1,0,1,0)),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    axis.line = element_blank(),
+    axis.ticks.length = unit(0, "null"),
+    plot.margin = margin(0.2,1,1,1, unit="pt"),
+    panel.spacing = unit(0, "pt"),
+    legend.position = "none",
+    #legend.direction="horizontal",
+    legend.key.width=unit(30,"pt"),
+    legend.background = element_rect(color=NA, fill=NA),
+    legend.box.just = "right",
+    legend.title = element_blank(),
+    panel.background = element_rect(fill="white", color="white")
+  )+
+  scale_fill_gradientn(colors=diverging_hcl(9, palette = "Purple-Green", ) %>% 
+                         #.[c(2:8)] %>% 
+                         {.[5]="gray85";.} , 
+                       limits=c(-1,1), na.value = "gray85")+
+  #scale_color_gradientn(colors=diverging_hcl(11, palette = "Blue-Red") %>% .[c(1,2,3,10,11)] %>% {.[3]="gray40";.} , limits=c(0.1,0.9))+
+  NULL
+
+#ggsave("tweetmap_sent_inset.png",g,scale = 0.4, width = 1000*5, height= 700*5, units = "px") # keywords for min 1000 clusters
+
+
+
+
+
+
+# tweet topic difference model
+library(doParallel)
+cl <- makePSOCKcluster(7)
+registerDoParallel(cl)
+library(caret)
+all(rownames(tweetframe) == rownames(twvecs))
+twvecsides = cbind(tweetframe %>% select(side) %>% mutate(side=as.factor(side)), as.data.frame(twvecs))
+ldamod = train( side ~ ., data=twvecsides, method="lda",
+                trControl = trainControl(method = "boot", number = 50))
+save(ldamod, file="ldamod.RData")
+stopCluster(cl)
+
+sleepnow()
+
+
+# find most divergent examples by ordering tweets containing target by their doc2vec vector similarity, as tweet is the context.
+wf %>% arrange(i10,simmean) %>%  head(20)  %>% pull(term)
+wf %>% arrange(simmean) %>%  head(20)  %>% pull(term)
+w="his"
+tmpsim = twmat %>% .[rowSums(.) %in% 5:10 , w]  %>% .[rowSums(.)>0,] %>% 
+  rownames()  %>% tweetframe[.,] %>% 
+  {sim2(twvecs[filter(.,side=="left") %>% pull(doc_id),  ],    # rows
+        twvecs[filter(.,side=="right") %>% pull(doc_id),  ]) } # cols
+c(
+  rowMeans(tmpsim) %>% sort() %>% head() %>% names %>% tw$text[.] %>% as.character(),
+  "\n",
+  colMeans(tmpsim) %>% sort() %>% head() %>% names %>% tw$text[.] %>% as.character()
+) %>% paste(collapse="\n") %>% cat 
+m=5;sim2(sims$lvlist[[m]], sims$lvlist[[m]][w,,drop=F])[,1] %>% sort(decreasing = T) %>% .[2:8] %>% names() %>% cat();cat("\n"); sim2(sims$rvlist[[m]], sims$rvlist[[m]][w,,drop=F])[,1] %>% sort(decreasing = T) %>% .[2:8] %>% names() %>% cat()
+
+
+# ask_for_a_friend, karma ja sheesh tunduvad sarnased, aga kontekst on erinev, sest parempoolsed räägivad muudkui poliitikast (win5 puhul)
+# flex (win2) tundub lihtsalt polüseemia
+
+
+
+
+##### plot frequency on sem map ####
+
+# devtools::install_github('rensa/ggflags')
+library(ggflags)
+
+load(file.path(corpusfolder, "followerminer/fixed", "jointvecs.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+
+umsem2 = cbind(umsem %>% as.data.frame(), freqs[rownames(umsem), ]) %>% 
+  filter(V1<15,V2<15, V1>-5.9,V1<6.2, !(term %in% c("ve", "ll", "🥲", "☺"))) %>%  arrange(abs(log2dif_doc)) %>% 
+  mutate(term=case_when(term=="nigga"~"n*gga", T~term )) %>% mutate(term=gsub("_", ".", term))
+# V1>20 are th-ordinals and months
+# log2 interpretable as fold change if squared; 1=2x, 2=4x (intermediate values not though, as it's still log scale)
+
+
+textdat = rbind(
+  umsem2 %>% 
+    filter(nusers>500 & nusers<9000 & abs(log2dif_doc)<2.5 & (nchar(term)>1 & term!="🇺🇸")  ) %>% 
+    mutate(v2c=cut(V2, breaks=15*0.8, include.lowest=T), v1c=cut(V1, breaks=25*0.8, include.lowest=T)) %>%  
+    group_by(v1c, v2c) %>% 
+    slice_min(n=2, order_by = V1) %>% 
+    ungroup() %>% 
+    select(-v1c, -v2c) %>% 
+    arrange(-nusers) %>% 
+    mutate(alpha=abs(log2dif_doc))
+  ,
+  umsem2 %>% 
+    filter(nusers>500 & nusers<9000 & abs(log2dif_doc)<2.5 & (nchar(term)==1 |term=="🇺🇸") ) %>% 
+    mutate(v2c=cut(V2, breaks=12*0.75, include.lowest=T), v1c=cut(V1, breaks=15*0.8, include.lowest=T)) %>%  
+    group_by(v1c, v2c) %>% 
+    slice_min(n=2, order_by = V1) %>% 
+    ungroup() %>% 
+    select(-v1c, -v2c) %>% 
+    arrange(-nusers) %>% 
+    mutate(alpha=abs(log2dif_doc))
+  ,
+  umsem2 %>% 
+    filter(nusers>500 & nusers<9000 & (abs(log2dif_doc)>=2.5 | term=="🇺🇸") ) %>% 
+    mutate(alpha=2.6)
+  ) %>% 
+  mutate(emo = case_when( (nchar(term)==1 & term!="$") | term=="🇺🇸" ~ T, T~F)) %>% 
+  filter(!duplicated(term))
+pointdat = umsem2 %>% filter(!(term %in% (textdat %>% filter(emo) %>% pull(term)))) %>% arrange(-nusers)
+
+
+g=ggplot(pointdat, aes( V2*-1, V1, label=term, color=log2dif_doc,fill=log2dif_doc, size=log(nusers)))+ # nusers
+  geom_point(size=log(pointdat$nusers)/5, alpha=1, shape=21, color="transparent", stroke=0)+
+  #
+  geom_point(data = textdat %>% filter(emo),  # emo backgrounds
+             size=log10(textdat %>% filter(emo) %>% pull(nusers))*1.8,
+             alpha=1, shape=16, stroke=0)+
+  geom_text(aes(size=log10(nusers+70), label=term), # emoji
+            hjust=0.5,vjust=0.5, alpha=1,
+            data = textdat %>% filter(emo, term!="🇺🇸") ) + # flag won't work -> geom_flag below
+  geom_text_repel(aes(size=log10(nusers), label=term, alpha=alpha), data = textdat %>% filter(!emo), box.padding = 0, min.segment.length = 9999, max.time = 5, max.overlaps = 1000000, direction = "both", segment.size=unit(0,"mm"), segment.alpha=0)+
+  geom_flag(aes(country="us"), data=textdat %>% filter(term=="🇺🇸"), size=3.5)+
+  #
+  annotate("text", x=-Inf, y=-Inf, hjust=-0.01, vjust=-0.3, label="Top 4241 US English words in the Twitter corpus (used by at least 200 accounts out of 10986)", size=2.5)+
+#
+  scale_size(range = c(0.8,5),  guide = "none")+
+  scale_alpha(range=c(0.5, 1), guide="none")+
+ theme_bw()+
+  scale_y_continuous(expand = expansion(add=0.1))+
+  scale_x_continuous(expand = expansion(add=0.1))+
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.ticks.length = unit(0, "null"),
+        plot.margin = margin(1,1,1,1, unit="pt"),
+        panel.spacing = unit(0, "pt"),
+        legend.position = c(0.83, 0.93),
+        legend.direction="horizontal",
+        legend.key.width=unit(30,"pt"),
+        legend.background = element_rect(color=NA, fill=NA),
+        legend.box.just = "right",
+        legend.title = element_blank()
+        )+
+    scale_color_gradientn(guide="none",
+      colors=c(rep("#023FA5",2), "#6A76B2", "gray60", "#B16273", rep("#8E063B", 2)),
+      limits =c(-max(abs(umsem2$log2dif_doc)), max(abs(umsem2$log2dif_doc))))+
+  scale_fill_gradientn(
+    colors=c(rep("#023FA5",2), "#6A76B2", "gray70", "#B16273", rep("#8E063B", 2)) %>% lighten(0.7),
+    limits =c(-max(abs(umsem2$log2dif_doc)), max(abs(umsem2$log2dif_doc))),
+    breaks=c(-4,-3,-2,-1,0,1,2,3, 4), labels=c("16x","8x", "4x\nmore in left", "2x", "", "2x", "4x\nmore in right", "8x", "16x" )
+    )
+  
+ggsave("semfreq.png",g,scale = 0.4, width = 1000*5, height= 700*5, units = "px")
+#ggsave("semfreq.pdf",g,scale = 0.4, width = 1000*5, height= 700*5, units = "px") # emoji won't work; emojifont works but then glyphs not emoji and some still broken.
+
+
+# calculate how predictable
+vecmod = cbind(freqs[rownames(vecs),] %>% select(log2dif_doc), as.data.frame(vecs))
+summary(lm(log2dif_doc ~ ., data=vecmod)) # adj R2=0.3784 , p<0.001
+summary(abs(vecmod$log2dif_doc - predict(lm(log2dif_doc ~ ., data=vecmod)))) # median abs error  0.3 on log2 scale
+
+# examples
+x = freqs %>% filter(nusers>=400) %>% arrange(-abs(log2dif_doc)) %>% select(log2dif_doc,doc_count_r_n, doc_count_l_n, nusers) %>% mutate(x = pmax(doc_count_l_n, doc_count_r_n)/pmin(doc_count_l_n, doc_count_r_n))
+x %>% head(100)
+x %>% filter(abs(log2dif_doc)<1, nusers>3000)
+x %>% filter(abs(log2dif_doc)<0.05, nusers>500, nchar(rownames(.))==1)
+496/10986*100 # 
+freqs["president_trump", c("doc_count_l", "doc_count_r" )] %>% sum
+x[c("president_trump", "trump"),]
+
+
+x[c("biden", "joe_biden"),] %>% colSums()
+x[c("biden", "joe_biden"),]
+
+x[c("🤡", "🇺🇸", "💪"),]
+
+
+x = sim2(vecr, vecl2); all(colnames(x)==rownames(x))
+intersect(lex$word,rownames(x)[diag(x)!=apply(x, 1, max)])
+rownames(x)[order(diag(x))] %>% head(100) %>% .[nchar(.)>0]
+
+
+tw %>% filter(user_id %in% okusers, side=="left") %>% mutate(text=tolower(text)) %>% filter(grepl("[^a-z]tf[^a-z]", text)) %>% pull(text) %>% kwic("tf", window=3)
+
+
+#### sentiment ####
+
+library(reticulate); use_condaenv('r-reticulate', required = T )
+# conda_install(envname = 'r-reticulate', c('vaderSentiment'), pip = TRUE, python_version="3.6")
+# conda_install(envname = 'r-reticulate', c('umap-learn'), pip = TRUE, python_version="3.6")
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "allusers.RData"))
+
+
+
+twsent = tw %>% filter(user_id %in% okusers) %>% 
+  mutate(text=gsub("🔥", "", text)) # classed as neg, often leads to weird results
+tmp=twsent$text
+py_run_string(
+"
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+analyzer = SentimentIntensityAnalyzer()
+"
+)
+# py_run_string("print(analyzer.polarity_scores(r.tmp))")
+py_run_string(
+"
+res=[]
+neu=[]
+for s in r.tmp:
+    x = analyzer.polarity_scores(s)
+    res.append(x['compound'])
+    neu.append(x['neu'])
+"
+)
+twsent$sent = py$res; twsent$neu = py$neu; rm(tmp)
+twsent = twsent %>% left_join(allusers %>% select(user_id, followers_count), by = "user_id")
+
+
+
+save(twsent, file=file.path(corpusfolder, "followerminer/fixed", "tweetsentiment.RData"))
+
+
+### sentiment keywords per sentiment band
+# not really interesting
+# leml = lem2[tw$user_id %in% okusers ]; all(names(leml) == twsent$status_id)
+# leml = leml[twsent$neu!=1]
+# xseq=seq(-1,1,length.out=7)
+# sentclus = twsent %>% 
+#   filter(neu!=1) %>% 
+#   mutate(cl = cut(sent, breaks=xseq, include.lowest=T)) %>% 
+#   select(status_id, cl, side)
+# all(sentclus$status_id==names(leml))
+# 
+# keywordfinder = function(toks, xside, sentclus, minfreq=500,nt=1){
+#   tmp = toks[sentclus$side==xside] %>% 
+#     dfm() %>% 
+#     dfm_trim(min_termfreq = minfreq) %>% 
+#     dfm_remove( max_nchar=15, 
+#                 pattern="[\"'°,.;:=?!¤%&/()-]|^[a-z]{1,2}$|_[ts]$", valuetype="regex") %>% 
+#     dfm_remove(c(stopwords("spa"), stopwords("en")))  %>% 
+#     dfm_weight("boolean") # otherwise emojis dominate
+#   docvars(tmp, field="cl") = sentclus %>% filter(side==xside) %>% pull(cl)
+#   twmattf = dfm_group(tmp,cl) %>% {.[.<minfreq]=0;.} %>% as.dfm() %>%  dfm_tfidf(force=T)
+#   docvars(twmattf, field="cl") = rownames(twmattf)
+#   tops = topfeatures(twmattf, groups = cl,  n = nt) %>% .[levels(sentclus$cl)]
+#   return(tops)
+# }
+# keywordfinder(leml, "left", sentclus, minfreq=500, nt=3)
+
+
+
+
+
+#### plot sentiment ####
+library(lubridate)
+library(zoo)
+load(file.path(corpusfolder, "followerminer/fixed", "tweetsentiment.RData"))
+
+
+nrow(twsent %>% filter(sent==0))/nrow(twsent) # 0.3173054 is zero
+nrow(twsent %>% filter(neu==1))/nrow(twsent)  # 0.314658 is neutrals-only 0
+
+twsentsm = twsent %>% filter(neu!=1) %>% arrange(created_at) %>% mutate(d = as.Date(created_at)) %>% 
+  group_by(d, side) %>% 
+  summarise(msent = mean(sent),
+            sdsent = sd(sent),
+            q25=quantile(sent, 0.1),
+            q75=quantile(sent, 0.9)
+            ) %>% 
+  group_by(side) %>% 
+  arrange(side) %>% 
+  mutate(rollsent = rollapplyr(msent,7,mean, partial=TRUE )
+         #,rollsd =  rollapplyr(sdsent,7,mean, partial=TRUE )
+         #,rollq25 =  rollapplyr(q25,7,mean, partial=TRUE )
+         #,rollq75 =  rollapplyr(q25,7,mean, partial=TRUE )
+         ) %>% 
+   group_by(side) %>% 
+  slice_head(n=-1) %>% 
+  ungroup() %>% 
+  mutate(d=as.POSIXct(d)) %>% 
+  filter(d <= twsent %>% filter(side=="right") %>% pull(created_at) %>% max)
+
+g=ggplot(twsentsm, aes(x=d, y=rollsent, color=side, fill=side))+
+  #geom_line(aes(y=rollq25), size=1)+
+  #geom_line(aes(y=rollq75), size=1)+
+  geom_hline(yintercept=0)+
+  geom_point(aes(y=sent, x=created_at),
+             data=twsent %>% filter(neu!=1, created_at <= max(twsentsm$d)) %>% arrange(created_at),
+             size=0.3, alpha=0.5, shape=21, color="transparent", stroke=0
+             , position=position_jitter(width=0, height = 0.06)
+             )+
+  geom_line(aes(y=msent), size=0.2)+
+  geom_line(size=1.7, alpha=0.9)+
+  coord_cartesian(ylim=c(-1,1))+
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%b", expand=c(0,0))+
+  scale_y_continuous(expand=expansion(add=0.01),  name = "-   Tweet sentiment   +")+
+  labs(subtitle="(a) Estimated sentiment of tweets over time", x="2021")+
+  scale_fill_manual(values=c("#007bff", "#e85d5d") %>% lighten(0.7))+
+  scale_color_manual(values=c("#007bff", "#e85d5d"))+ #c("#4A6FE3", "#D33F6A") )+
+  theme_bw()+
+  theme(legend.position = "none", 
+        #axis.title.x=element_blank(), 
+        plot.margin = margin(5,1,1,1)
+        )+
+  NULL
+# ggsave("sent.png", g, width=1000*5, height=500*5, units="px", scale=0.4)
+
+
+
+##### user sentiment ####
+options(scipen=999)
+twsent %>% filter(neu!=1) %>% count(user_id) %>% filter(n>=10) %>% nrow  # 9100 # 7730 if 10
+usent = twsent %>% filter(neu!=1) %>% group_by(user_id) %>% filter(n()>=10) %>% summarise(usent = mean(sent), n=n(), side=side[1], followers_count = followers_count[1]) 
+
+g2 = ggplot(usent, aes(y=usent, size=n, fill=side,color=side, x=followers_count ))+
+  geom_hline(yintercept=0)+
+  geom_point(alpha=0.5, shape=21, color="white", stroke=0.05)+
+  geom_smooth(se=F,method="lm", size=0.5)+
+  scale_size(range=c(0.3,2), breaks = c(10, 100, 300, 600))+
+  scale_fill_manual(values=c("#007bff", "#e85d5d"), guide="none")+
+  scale_color_manual(values=c("#007bff", "#e85d5d"), guide="none")+
+  scale_y_continuous(expand=expansion(add=0.01), limits = c(-1,1))+
+  scale_x_continuous(breaks=c(10,100,1000,10000, 100000),
+                     #breaks=c(seq(200,1000,100),seq(2000,5000, 1000)), 
+                     trans="log10", expand=c(0.01,0)) +
+  annotation_logticks(sides="b", size=0.3, 
+                      short = unit(.5,"mm"),
+                      mid = unit(1,"mm"),
+                      long = unit(1.5,"mm")) +
+  labs(y="-   User average sentiment   +", x="Number of followers (log10 scale)", size="Number of tweets\nper account", subtitle="(b) Estimated user sentiment (average of user tweets)")+
+  guides(size = guide_legend(title.position="top",nrow=1, override.aes = list(shape=21, color="white", fill="black")))+
+  theme_bw()+
+  theme(legend.position = c(0.95,0.05),
+        legend.direction = "horizontal",
+        legend.justification = c(1,0),
+        legend.key.width = unit(0.5, "pt"),
+        legend.key.height = unit(-1, "pt"),
+        legend.box.margin = margin(0,0,0,0),
+        legend.margin=margin(0,0,0,0),
+        legend.text = element_text(margin=margin(0,1,0,0, "pt")),
+        legend.title= element_text(size=9,margin=margin(0,0,0,0)),
+        legend.background = element_rect(fill="gray98", size = 0),
+        legend.key = element_rect(fill="gray98"),
+        plot.margin = margin(2,4,1,10),
+        panel.grid.minor.x = element_blank()
+  )+
+  #geom_smooth(method="lm")
+  NULL
+
+# ggsave("sent.png", g2, width=500*5, height=500*5, units="px", scale=0.5)
+ggsave("sent.png", g+g2, width=1000*5, height=400*5, units="px", scale=0.5)
+
+
+usent %>% filter(usent< -0.1, n>610) %>% arrange(usent)
+twsent %>% filter(user_id %in%  (usent %>% filter(usent< -0.75) %>% pull(user_id))) %>% 
+  pull(status_url) %>% .[1]
+  pull(text)
+# example of filter fail? @MaryCrofts10 109 followers, has tags #Bernie2020#innocence project #blacklivesmatter she/her/hers, follows cnn, tweets anti-republican, but is tagged right side (must have followed just rightwing back then?)
+# The most-neg user with 2000+ followers is BradleyEnfield, posts pics of women and cars with fire emoji (classed as negative) -> now removed all fire emoji from sentiment-analyzed corpus, easier.
+
+
+# tweet sentiment difference
+library(lme4)
+twsent %>%   filter(neu!=1) %>%  group_by(side) %>% summarise(m=mean(sent, na.rm=T))
+
+
+twmodeldata = twsent %>%  filter(neu!=1) %>%  mutate(time=scale(as.numeric(created_at))[,1])
+m0 = lmer(sent~  (1|user_id), data=twmodeldata, REML = F)
+m1 = lmer(sent~side + (1|user_id), data=twmodeldata, REML = F)
+m2 = lmer(sent~side*time + (1|user_id), data=twmodeldata, REML = F )
+# reml false as doing model comparison
+anova(m0,m1) 
+anova(m1, m2) 
+summary(m1)
+
+resid(m1) %>% hist()
+x=sample(1:nrow(twmodeldata), 10000) ; plot(resid(m1)[x],fitted(m1)[x])
+
+
+# users
+summary(lm( usent ~ side, data=usent )) # same -0.068 as above, makes sense
+summary(lm( usent ~ log10(followers_count), data=usent )) # R2 = 0.03295 
+# hist(residuals(lm( usent ~ log10(followers_count), data=usent )))
+# (Intercept)            0.139150   0.009136   15.23   <2e-16 ***
+# log10(followers_count) 0.060233   0.003705   16.26   <2e-16 ***
+summary(lm( usent ~ log10(followers_count) * side, data=usent ))  # R2:  0.05634 
+#   (Intercept)                       0.224544   0.012791  17.555  < 2e-16 ***
+#   log10(followers_count)            0.036791   0.005125   7.178 7.71e-13 ***
+#   sideright                        -0.164016   0.018060  -9.082  < 2e-16 ***
+#   log10(followers_count):sideright  0.042467   0.007333   5.791 7.28e-09 ***
+
+
+usent %>% filter(log10(followers_count) >4, usent<0)
+twmodeldata %>% filter(user_id=="1225469439698702338") %>% arrange(sent) %>% select( text, sent) %>% pull(text) %>% head(10) # example
+twmodeldata %>% filter(user_id=="14782635") %>% arrange(sent) %>% select(text, sent) %>% head(20)
+usent %>% arrange(-followers_count)
+
+twmodeldata %>% filter(user_id=="26072066") %>% arrange(-sent) %>% select(followers_count, text, sent) %>% head(20)
+
+
+twsent %>% filter(!grepl("[^a-z ]{5,}|^[^a-z ]+$", text, ignore.case = T)) %>% group_by(side) %>% slice_min(n=3, order_by = sent) %>% pull(text)
+# both most neg and pos are full of emoji, positive ones are congrats and jubilations, negative (non-emoji) ones curses and insults.
+
+
+
+
+
+
+
+
+
+
+#### sem plot  ####
+
+# redo, replace in data object with ., then plot all
+# unit should be number of tweets not users?
+
+load(file.path(corpusfolder, "followerminer/fixed", "semfast.RData"))
+lex = read.table("C:/Users/Andres/Dropbox/cudan/medialanguage/stim_lex.txt", sep="\t", encoding="UTF-8", quote='"', na.strings = "NA", header = 1)
+
+freqs2 = freqs %>% filter( term_count_l >= 100 & term_count_r >= 100 & 
+                            (term_count_l >= 200 | term_count_r >= 200) & 
+                            nusers>200, !grepl("^[[:punct:]]+$", term)
+                          ) %>% 
+  mutate(semdif = 1- (psim2(vecl2, vecr)[term])) %>% 
+  mutate(sizemult=1) %>% 
+  mutate(nusersp = nusers/length(okusers)*100) %>% 
+  filter(nusersp<40) %>% 
+  #mutate(sizemult = log2dif_doc*(1/nusers) ) %>% 
+  #mutate(sizemult = scale(abs(log2dif_doc))[,1] + (scale(nusers)[,1]*50)  ) %>% 
+  mutate(big=case_when(
+    (semdif>0.4 | term %in% lex$word) & term!="🇺🇸"  ~ T,
+    T~F
+  )
+  ) %>% 
+  mutate(term=case_when(term=="nigga"~"n*gga", T~term)) %>% 
+  mutate(term=gsub("_","\n",term)) %>% 
+  filter(term!="🥲") 
+
+
+
+# experiment plot placeholder
+g2=ggplot()+
+  theme_bw()+
+  theme(
+    plot.title = element_text(size=8, margin=margin(1,0,1,0, unit="pt")),
+    axis.title = element_text(size=8, margin=margin(0,0,0.1,0, unit="pt")),
+    plot.margin = margin(0.1,0.1,0.1,1, unit="pt"),
+    axis.text=element_text(size=8)
+           )+
+  labs(title="(b) Experimental results")
+
+
+
+
+g=comparisonplot(freqs2, xvar="semdif", ymx=34)
+ggsave("semantics.png",
+       g+g2+plot_annotation(theme=theme(plot.margin=margin(0,0,0,0))) 
+                            ,scale = 0.4, width = 1000*5, height=500*5, units = "px" )
+
+
+
+
+
+
+
+
+#### examples for poster ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets2.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+
+tw %>% filter(user_id %in% okusers, side=="left") %>% 
+  filter(
+    grepl("[a-z]burn[a-z]",text, ignore.case = T),
+    nchar(text)>200
+    #grepl("shit",text, ignore.case = T),
+    #grepl("nigga",text, ignore.case = T),
+    ) %>% 
+  pull(text)
+
+
+
+
+
+
+
+
+
+#### old semantics comparison ####
+
+
+## ! selle peaks tegema teistpidi ka, et leida ühe poole sõnadele lähim teise poole sõna, ja vaadata kas see on sama mis endal. ehk mida "tähendab" trump ühe või teise jaoks.
+freqs1 = freqs1 %>% mutate(
+  psim = psim2(sims$lvlist[[5]][.$term,], sims$rvlist[[9]][freqs1$term,]),
+  topsim = sim2(sims$bv) %>% {diag(.)=-Inf; .} %>% .[,freqs1$term] %>% apply(2, function(x) sort(x,decreasing = T)[1:10] %>% mean)
+)
+freqs1$res = -1*(lm(psim~topsim+fnlm, freqs1) %>% residuals)
+freqs1 = freqs1 %>% mutate(big=case_when(res>0.2))
+freqs1 %>% arrange(res) %>% pull(term) %>% head(30)
+
+
+g =ggplot(freqs1, aes(1-psim, nusers, color=log2dif_doc, label=term, size=(1+res)*log10(nusers)))+
+  #geom_point()+
+  geom_text(hjust=1)+
+  annotation_logticks(sides="lr", size=0.3, 
+                      short = unit(.5,"mm"),
+                      mid = unit(1,"mm"),
+                      long = unit(2,"mm")) +
+  scale_size(range = c(1,3),  guide = "none")+
+  scale_y_continuous(breaks=c(500,1000,5000),trans="log10", expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0), limits = c(0.15,0.7001))+
+  scale_color_gradientn(colors=
+     c(rep("#023FA5",2), "#6A76B2", "gray60", "#B16273", rep("#8E063B", 2)),
+      limits = c(-max(abs(freqs1$log2dif_doc)),max(abs(freqs1$log2dif_doc))),
+     name="log2\nfreq\ndif"
+  )+
+  theme_bw()+
+  theme(panel.grid.minor = element_blank(), legend.position=c(0.95,0.8))+
+  labs(x="<<< same meaning | diverging meaning >>>", 
+       y=expression(number~of~users~~"("*log[10]*")") )
+
+
+ggsave("C:/Users/Andres/Dropbox/cudan/medialanguage/sem2.jpeg",g,scale = 0.6, width = 1000*5, height=600*5, units = "px" )
+
+
+
+
+
+
+
+#### remove names. simple name classifier. ####
+
+# is this needed?
+
+load(file.path(corpusfolder, "followerminer/fixed", "tweets.RData"))
+tweets = tweetfilter_spam(tweets)
+
+it = itoken(tweets$text, tokenizer = word_tokenizer, progressbar = T)
+rm(tweets)
+v = create_vocabulary(it)
+
+freqs$notname = ifelse(nchar(freqs$term)<2 | freqs$nusers>1000 |
+                         grepl("^[0-9]|_", freqs$term) |
+                         freqs$term %in% c("lets", stopwords()) , 
+                       T, F)
+freqs$lowpercent=1
+v = v[tolower(v$term) %in% freqs$term[!freqs$notname],]
+v$terml = tolower(v$term)
+for(i in which(!freqs$notname)){
+  # lowercase + all-uppercase / total
+  freqs$lowpercent[i] = 
+    (sum(v[v$term %in% freqs$term[i], "term_count"]) +
+       sum(v[v$term %in% toupper(freqs$term[i]), "term_count"])
+    ) / 
+    sum(v[v$terml %in% freqs$term[i],"term_count"])
+}
+hist(freqs$lowpercent, breaks=20)
+# define list of names I do want in there for comparison and context, plus some things that got lost in the lemmatization
+namesofinterest = strsplit("kabul clinton kennedy mets italian olympic china afghans christian jewish vegas bernie ireland italy america kamala christ canada muslim soros obama pfizer indians costco marchmadness yankees karen fauci taliban hollywood iphone english french capitol christianity greek yep japanese dr easter vietnam spanish cuba irish ford supreme mr christmas awww amazon freebritney wuhan venezuela pelosi netflix asians disney olympics hannity grammys congratulations juneteenth asian cancun latin superbowl marxist catholic loki spain walmart awwww senate indy aww marine tesla mars moderna pence manhattan trump wandavision facebook hunter inc newsmax hitler republican halloween congrats hawaii jews cubs rangers congratulation superman congress tiktok cali yup march jesus instagram republicans pope knicks pepsi starbucks twitter welp ditto amen dak eagles raiders bishop knight oooh bucs astros mac prince bush batman elder yankee ummm viking braves marines navy padres ahh gee democrats lakers xbox democratic youtube aw yessir rocky dodgers ahhh nope disneyland bible rep god ranger ooh pearl neverforget reds woohoo bidens midwest gov sh*t retweete rewatche vaxxe texte yike defunde", " ")[[1]]
+freqs$notname = ifelse(freqs$lowpercent >=0.2 | freqs$term %in% namesofinterest, T, F) %>% replace_na(F)
+any(is.na(freqs$notname))
+freqs$notname[freqs$term %in% c("california","john" )] = F # post-filter fixes
+
+
+# freqs2 = freqs %>% filter(notname & fl >= 100 & fr >= 100 & (fl >= 200 | fr >= 200) & nusers>200)
+
+save(freqs, file=file.path(corpusfolder, "followerminer/fixed", "freqs.RData"))
+
+
+#freqs %>% filter(lowpercent < 0.2) %>% arrange(lowpercent) %>% tail (100) %>% pull(term)
+#v[v$terml %in% "alright",]
+# 
+
+
+
+
+
+
+
+#### old, bert instead ####
+
+# https://huggingface.co/vinai/bertweet-base
+# vinai/bertweet-large
+
+
+library("text")
+library(reticulate)
+# install_miniconda(update = T, force=T)
+# py_config()
+# py_version()
+use_condaenv('r-reticulate', required = T )
+#  ##old conda_install(envname = 'r-reticulate', c('transformers', 'numpy', 'nltk', 'torch'), pip = TRUE, python_version="3.6")
+# if reinstall: conda_install(envname = 'r-reticulate', c('gensim'), pip = TRUE, python_version="3.6")
+# import("torch")
+# spacy initialization imports python, conflicts with this one, don't load both!
+x = textEmbed(
+  "river bank river-bank riverbank",
+  model = "vinai/bertweet-large", 
+  layers = 9:11, context_layers = 11, decontexts = T)
+
+
+
+
+
+
+
+
+
+
+
+#### old semantics ####
+load(file=file.path(corpusfolder, "followerminer/fixed", "vecs.RData"))
+
+freqs2 = freqs %>% filter(notname & fl >= 100 & fr >= 100 & (fl >= 200 | fr >= 200) & nusers>200)
+u2 = intersect(rownames(vecl), rownames(vecr)) %>% intersect(freqs2$term)
+vecr2 = vecr[u2 ,]
+vecl2 = vecl[u2 ,]
+
+lr = orthprocr(X=vecl2, Z=vecr2)$XQ
+# makes no difference, rotation yields same psims both ways (max dif is 2e-15)
+freqs2$psim = psim2(lr, vecr2[freqs2$term,])
+
+# divergence and freq not independent, take residual instead, so "more different than expected"
+ggplot(freqs2 , aes(fnlm, psim, label=term)) + 
+  geom_point(size=0.5, alpha=0.2)+
+  geom_text(size=3)+
+  geom_smooth(method="lm", formula = "y~poly(x,6)")+
+  labs(y="cosine self-similarity", x="mean log frequency")+
+  ylim(c(0,1))
+# freqs %>% arrange(fnlm) %>% tail(40)
+
+m=(lm(psim ~ poly(log(fln),6)*poly(log(frn),6), data=freqs2 ))
+summary(m)
+freqs2$res = m$residuals
+
+freqs2 %>% filter(fnlm<8) %>% arrange(res) %>% head(50) %>% pull(term) %>% paste(collapse="\n")  %>%  cat() # top dissimilar words (as smallest negative residuals)
+
+
+
+compsims("vet", vecr2, vecl2, n=8)
+compsims("woke", vecr2, vecl2, n=8)
+compsims("🐐", vecr2, vecl2, n=8)
+compsims("sheesh", vecr2, vecl2, n=8)
+compsims("trump", vecr2, vecl2, n=8)
+compsims("♥", vecr2, vecl2, n=9)
+
+tw %>% filter(side=="right") %>% filter(grepl("wokes", text) ) %>% pull(text)
+attr(lem, "phrases") %>% filter(grepl("joe", collocation))
+
+
+g = ggplot(freqs2 %>% filter(res < -0.04  , fnlm<8),
+       aes(0, res, label=term, color=log2dif, size=nusers))+
+  geom_text_repel(
+            alpha=0.9, direction = "x", hjust=0.5, box.padding = 0,min.segment.length = 9999, max.time = 1,max.overlaps = 3000)+
+  #scale_x_continuous(breaks=c(-4,-2,-1,0,1,2,4), labels=c("16x","4x left", "2x left", "", "2x right", "4x right", "16x" ), limits = c(-4,4))+
+  scale_size(range = c(3,5),  guide = "none")+
+  #scale_color_gradientn(colors=diverging_hcl(11, palette = "Blue-Red")  %>% {.[6]="darkgray";.}, limits = c(-4,4))+
+  #scale_color_viridis_c(option = "B", end = 0.9,direction = -1 )+
+  lims(x = c(-10, 10), y=c(-0.2702,-0.05))+
+  #scale_color_gradientn(colors=diverging_hcl(2, palette = "Blue-Red2") %>% {c(.[1], "gray15", .[2])}, limits = c(-4.2356,4.2356))+
+  scale_color_gradientn(colors=diverging_hcl(11, palette = "Blue-Red2") %>% darken(0.2) %>% {.[6]="gray25";.}, limits = c(-4,4))+
+  theme_minimal()+
+  labs(y="<< more divergent", x="words pushed horizontally to avoid overlap; color corresponds to frequency difference")+
+  theme(legend.position = "none")+
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()
+        )
+
+ggsave("C:/Users/Andres/Dropbox/cudan/medialanguage/sem.jpeg",g,scale = 0.6, width = 1000*5, height=600*5, units = "px" )
+
+
+# similar
+freqs2 %>% filter(nusers>500, fnlm<6) %>% arrange(res) %>% tail(40) %>% pull(term) %>% cat()
+
+
+
+
+
+#### topics ####
+
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load("C:/Users/Andres/korpused/twitter/followerminer/fixed/accounts.RData")
+load(file.path(corpusfolder, "followerminer/fixed", "allusers.RData"))
+
+lda_model = LDA$new(n_topics = 100); tops = lda_model$fit_transform(x = dtm0, n_iter = 600, convergence_tol = 0.001, n_check_convergence = 25, progressbar = FALSE)
+um = umap( tops)$layout %>% as.data.frame() # as(dfm_tfidf(dtm0),"matrix")
+um$user_id = rownames(um)
+um$side = allusers$side[match(um$user_id, allusers$user_id)]
+um$folls = allusers$followers_count[match(um$user_id, allusers$user_id)]
+
+save( um,lda_model, tops, file=file.path(corpusfolder, "followerminer/fixed", "um.RData"))
+# sleepnow()
+
+load(file.path(corpusfolder, "followerminer/fixed", "mats.RData"))
+load(file.path(corpusfolder, "followerminer/fixed", "um.RData"))
+
+um2 = um %>% 
+  #filter(V1 > -6, V1 < 11, V2 < 11, V2 > -20) %>%  # paper version
+  filter(V1 > -10, V1 < 15,  V2 < 13, V2 > -25) %>%   # poster
+  mutate(logfol = ifelse(folls>100000, 100000,folls) %>% log %>% rescale(to = c(0.7,2.6)))
+bwords = prepare_umap(um2, tf, 12, lda_model, tops) %>% 
+  mutate(keyw2=case_when(keyw2=="nigga"~"n*gga", T~keyw2))
+g= um2 %>% ggplot( aes(V2, V1))+
+  geom_text_repel(aes(V2, V1,label=keyw2, size=n, color=col),
+                  data=bwords, #%>%  filter(V1 > -6, V1 < 11, V2 < 11, V2 > -20),
+                  alpha=1, box.padding = 0,min.segment.length = 9999, max.time = 0.5,max.overlaps = 20)+
+  geom_point(aes( fill=side), alpha=0.25, size=um2$logfol, shape=21, stroke=0, color="transparent")+
+  #lims(x=c(-8,1), y=c(-8,3))+
+  scale_fill_manual(values=diverging_hcl(2, palette = "Blue-Red2", rev = F) , guide="none")+
+  scale_color_gradientn(colors=diverging_hcl(11, palette = "Blue-Red")  %>% {.[6]="gray45";.} %>% rev() , values = c(0,1))+
+  scale_size(range=c(3, 6))+
+  coord_cartesian(expand=c(0.001))+
+  theme_void()+
+  theme(legend.position = "none")+
+  theme(plot.margin = margin(0,0,0,0),
+        plot.background = element_rect(fill="white", color="white"))
+
+#ggsave("C:/Users/Andres/Dropbox/cudan/medialanguage/umap4b.jpeg",g,scale = 0.6, width = 1000*5, height=400*5, units = "px" )
+ggsave("posterumap.png",g, scale = 0.6, width = 1000*5, height=400*5, units = "px")
+
+# "detrend" the topic model plot by removing seasonal vocabulary?
+# plot topic plot dots by median engagement (likes&rt)?
+# semantics: remove highly user-specific words.
+
+
+
+
+
+
+#### mds tests ####
+
+cols=diverging_hcl(2, palette = "Blue-Red2") %>% rev
+
+ggplot(um %>% filter(V1 < 3, V2 < 3), aes(-V2, V1, color=side))+
+  geom_point(alpha=0.2, size=0.4)+
+  #lims(x=c(-8,1), y=c(-8,3))+
+  scale_color_manual(values=cols, guide="none")+
+  #scale_size(range=c(0.1, 4))
+  theme_void()+ggtitle("umap")
+
+ggplot(um , aes(m11, m22, color=side))+
+  geom_point(alpha=0.2, size=0.4)+
+  # lims(x=c(-0.11,0.07), y=c(-0.09,0.07))+
+  scale_color_manual(values=cols, guide="none")+
+  #scale_size(range=c(0.1, 4))
+  theme_void()+ggtitle("mds")+
+  
+  ggplot(um %>% filter(p2<7,p1 > -5) , aes(p1, p2, color=side))+
+  geom_point(alpha=0.2, size=0.4)+
+  # lims(x=c(-0.11,0.07), y=c(-0.09,0.07))+
+  scale_color_manual(values=cols, guide="none")+
+  #scale_size(range=c(0.1, 4))
+  theme_void()+ggtitle("pca")
+
+#### filter tests ####
+nrow(x)
+x %>% group_by(user_id) %>% count() %>% arrange((n)) %>% ggplot(aes(x=n))+geom_histogram()
+
+x %>%  group_by(user_id) %>% filter(n()==700) %>% summarize(m=median(created_at)) %>% ggplot(aes(x=m))+geom_histogram()
+
+x %>%  group_by(user_id) %>% filter(n()==700) %>% summarize(m=min(created_at)) %>% pull(m) %>% sort() %>% tail()
+
+x$text %>% strsplit(" ") %>% unlist(F,F) %>% length() 
+grep("@", x$text) %>% length()
+
+# right:
+# if 500: 10,967,878 words (minus 300k urls and 500k @s etc)
+# if 700 with pruning of high-volume accs: 12,043,327
+# if 700 + pruning + 0.03 likes ratio then 808729 tweets 11,903,663 words
+# all that minus non-latinate: 806751, 11,895,898
+
+# left:
+# 742272, 10,312,341
+
+
+x %>% group_by(user_id) %>% summarise(m = sum(favorite_count)/n()) %>% pull(m) %>% sort() #ggplot(aes(x=m))+geom_histogram()
+x %>%  group_by(user_id) %>% filter(n()==700 & min(created_at)>=as.POSIXct(paste0("2021-09-01", " 00:00:00"))) %>%  pull(status_id) %>% head()
+
+x %>% filter(user_id=="1076600157498757122") %>% summarise(m=sum(favorite_count)/n())
+
+# languages. und is short replies and urls, median 2 chars, but also 2000 tweets with just hashtags. pt seems mostly english, fr is food names and such, et is often hashtags etc; no point in removing them, mostly ok. but filter out clear nonlatinate scrips: c("ja", "zh", "ko", "ar", "he", "ru", "th", "uk", "ur", "el", "fa" )
+x$lang %>% table %>% sort
+x %>% filter((lang %in% c("und"))) %>% filter(nchar(text)>100) %>% pull(text) %>% length()
+x %>% filter((lang %in% c("und"))) %>% pull(text) %>% gsub("@[^[:space:]]+|http[^[:space:]]+", "",.) %>% nchar() %>% summary()
+ggplot(x, )
+
