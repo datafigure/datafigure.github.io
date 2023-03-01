@@ -75,7 +75,7 @@ knitr::knit_hooks$set(class = function(before, options, envir) {
 
 ```
 
-TLÜ töötaja: enne raporti lugemust palume täita väikse **küsimustiku**. Ainult 7 valikvastusega küsimust, ~3&#8209;4 minutit, aga tulemustest saame aimu, kus ülikoolipere praegu nendes küsimustes seisab:
+TLÜ töötaja: enne raporti lugemust palume täita väikse anonüümse **küsimustiku**. Ainult 7 valikvastus-küsimust, ~3&#8209;4 minutit, aga tulemustest saame aimu, kus ülikoolipere praegu nendes küsimustes seisab:
 <a target="blank" href="https://forms.gle/VEL4LphbVXMcAKyU6">LINK</a><br>
 <font size="3">(see on erinev koolituse ideekorjest; palume täita ka seal osalenutel)</font>
 

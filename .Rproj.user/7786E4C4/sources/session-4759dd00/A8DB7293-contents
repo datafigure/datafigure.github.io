@@ -470,11 +470,25 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
     }
   }
   
-  # system internal diversity, for a, b and ab joint.
-  # joint
-  #tmpmean = 
-  # A
+  ### TODO ----------------
   #disttomean(filmfestvecs %>% filter(ab=="A"), fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=2)
+  sysdivs = filmfestvecs %>% 
+    rbind(filmfestvecs %>% mutate(ab="Both")) %>% 
+    group_by(ab, YearEvent) %>% 
+    group_split() %>% 
+    lapply(function(x){
+      if(metatype=="geo"){
+        fmean=geomean(x %>% filter(!is.na(lat)) %>% select(long, lat), x$weight) 
+        colnames(fmean)=c("long", "lat")
+      } else {
+        fmean = summarise(x, across( starts_with("V"), weighted.mean, w=x$weight, na.rm=T)) %>% as.matrix # year mean
+      }
+      #  system internal diversity + bootstrapped confidence
+      di = disttomean(x, fmean, w=x$weight, maxdist, geo=metatype=="geo", divmult=2)
+      return(tibble(sysdiv=di[1], slower=di[2], supper=di[3], 
+                    YearEvent=x$YearEvent[1], ab=x$ab[1]  ))
+    }
+    ) %>% bind_rows()
   
   # B
   
@@ -608,6 +622,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
   attr(festvecs, "filmfestvecs")=filmfestvecs
   attr(festvecs, "info")=info
   attr(festvecs, "tops")=tops0
+  attr(festvecs, "sysdivs")=sysdivs
   
   
   return(festvecs)
