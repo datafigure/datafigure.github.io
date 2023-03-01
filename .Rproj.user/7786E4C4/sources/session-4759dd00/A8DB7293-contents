@@ -343,6 +343,22 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
          ", directorratio=",  ratiodf %>% round(2),
          ", nfilms=", nf
        )) 
+     
+    # system averages
+    sysdivs0 = d %>% 
+      left_join(gratios, by = "refFilm") %>% 
+      filter(!is.na(ratiof), nother<1) %>%   
+      group_by(EventID_VZ) %>% 
+      mutate(nf=n_distinct(refFilm)) %>% 
+      filter(nf>=minfilms, YearEvent>=2012) %>%  # final filter + fixed year filter
+      group_by(EventID_VZ) %>% 
+      mutate(ws = 1/n_distinct(refFilm)) %>% 
+      ungroup()
+    sysdivs = rbind(sysdivs0, sysdivs0 %>% mutate(ab="Both")) %>% 
+      group_by(ab, YearEvent) %>% 
+      summarize(across(starts_with("ratio"), weighted.mean, w=ws, na.rm=T)) %>% 
+      ungroup() %>% 
+      rename(sysdiv=ratiof, supper=ratiofmax, slower=ratiofmin)
     
     info = paste(length(unique(filmfestvecs$refFilm)), "unique films," ,
                  length(unique(filmfestvecs$EventID_VZ)), "unique fests,", 
@@ -352,6 +368,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
     
     attr(festvecs, "filmfestvecs")=filmfestvecs
     attr(festvecs, "info") = info
+    attr(festvecs, "sysdivs") = sysdivs
     
     return(festvecs)
   }
@@ -470,7 +487,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
     }
   }
   
-  ### TODO ----------------
+  # System internal diversity
   #disttomean(filmfestvecs %>% filter(ab=="A"), fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=2)
   sysdivs = filmfestvecs %>% 
     rbind(filmfestvecs %>% mutate(ab="Both")) %>% 
