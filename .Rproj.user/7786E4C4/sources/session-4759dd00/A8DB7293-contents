@@ -474,6 +474,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
   #disttomean(filmfestvecs %>% filter(ab=="A"), fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=2)
   sysdivs = filmfestvecs %>% 
     rbind(filmfestvecs %>% mutate(ab="Both")) %>% 
+    filter(YearEvent>=2012) %>% # hard filter here, early years have too little data
     group_by(ab, YearEvent) %>% 
     group_split() %>% 
     lapply(function(x){
@@ -486,7 +487,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
       #  system internal diversity + bootstrapped confidence
       di = disttomean(x, fmean, w=x$weight, maxdist, geo=metatype=="geo", divmult=2)
       return(tibble(sysdiv=di[1], slower=di[2], supper=di[3], 
-                    YearEvent=x$YearEvent[1], ab=x$ab[1]  ))
+                    YearEvent=x$YearEvent[1], ab=x$ab[1], nf=nrow(x)  ))
     }
     ) %>% bind_rows()
   
