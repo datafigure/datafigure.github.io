@@ -3,7 +3,7 @@
     "path": "~/GitHub/datafigure.github.io/reports/chatgpt.qmd",
     "project_path": "reports/chatgpt.qmd",
     "type": "quarto_markdown",
-    "hash": "584660608",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1677443689359.0,
@@ -13,15 +13,15 @@
         "rmdVisualMode": "false",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "257,15",
-        "scrollLine": "245"
+        "cursorPosition": "263,97",
+        "scrollLine": "250"
     },
     "folds": "",
-    "lastKnownWriteTime": 1677682400,
+    "lastKnownWriteTime": 1678024473,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1677682400279,
+    "last_content_update": 1678024473529,
     "read_only": false,
     "read_only_alternatives": []
 }

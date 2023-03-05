@@ -3,7 +3,7 @@
     "path": "C:/Users/Andres/Dropbox/cudan/cudanimõtted.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "1176087779",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1677605811091.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "1255,122",
-        "scrollLine": "1248"
+        "cursorPosition": "2311,89",
+        "scrollLine": "2300"
     },
     "folds": "",
-    "lastKnownWriteTime": 1677664890,
+    "lastKnownWriteTime": 1678024121,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1677664891080,
+    "last_content_update": 1678024121688,
     "read_only": false,
     "read_only_alternatives": []
 }

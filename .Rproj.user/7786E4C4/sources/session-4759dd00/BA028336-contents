@@ -1,0 +1,43 @@
+
+
+
+library(tidyverse)
+library(readxl)
+library(patchwork)
+
+
+x = read_excel("C:/Users/Andres/korpused/newsreels/Newsreel story categories_1971_chatgpt.xlsx", sheet="chatgpt")
+x = x %>% mutate(mila = case_match(Story_Topic_Category,
+                                  "domestic political meeting"~"political"  ,
+                                  "events abroad"~"abroad"     ,
+                                  "industrial production"~"industrial" ,
+                                  "meeting foreigners"~"foreigners" ,
+                                  "progress of the USSR"~"progress"   ,
+                                  "Soviet military"~"military",
+                                  .default=Story_Topic_Category
+                                   ))
+sum(x$chatGPT==x$mila)/nrow(x)  # 0.6445623
+
+cx = x %>% group_by(chatGPT, mila) %>% summarise(n = n())
+
+ggplot(cx, aes(chatGPT, mila, fill=n, label=n))+
+  geom_tile()+
+  geom_text()+
+  scale_fill_gradient(low="white", high="skyblue")+
+  theme(legend.position = "none")+
+
+ggplot(cx %>% group_by(mila) %>% mutate(n=round(n/sum(n)*100)  ), aes(chatGPT, mila, fill=n, label=n%>% paste0("%")))+
+  geom_tile()+
+  geom_text()+
+  scale_fill_gradient(low="white", high="skyblue")+
+  theme(legend.position = "none")
+
+
+# costs
+( (2012280/4000) +     # data
+(143*12708)+   # prompt
+12708) *      # output
+  1.4 / 1000 * 0.002
+# = $10.8
+
+  

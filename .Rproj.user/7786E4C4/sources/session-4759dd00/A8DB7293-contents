@@ -29,6 +29,7 @@ library(tidyverse)
 
 
 disttomean=function(x, m, w, maxd=NULL, geo=F, divmult=2){
+  # with bootstrapping
   if(!geo){
     d = dist2(x %>% select(starts_with("V")) %>% as.matrix,
               m,   #  festival or grand mean
@@ -300,7 +301,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
         ratiofmin = sum(txtKind=="F") / n() ,   # min if all unk would be M
         nother=round(sum(txtKind=="other")/n(), 5)  # ratio of unknowns per film; round just in case to avoid any chance of floating point error, for filter below
         )
-    
+ 
     dratios = filmkinds %>% 
       filter(refFilm %in% d$refFilm) %>% 
       filter(txtType == "Director") %>% 
@@ -312,6 +313,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
         #dnother=round(sum(txtKind=="other")/n(), 5)  # ratio of unknowns per film; round just in case to avoid any chance of floating point error, for filter below
       )
     
+   
     pratios = filmkinds %>% 
       filter(refFilm %in% d$refFilm) %>% 
       filter(txtType == "Producer") %>% 
@@ -331,10 +333,16 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
       group_by(EventID_VZ) %>% 
        mutate(nf=n_distinct(refFilm)) %>% 
        filter(nf>=minfilms) # final filter here
-     festvecs=filmfestvecs %>% 
+     
+     festvecs=filmfestvecs %>% # filter(EventID_VZ=="1") %>% # test  
+       # grouped by event
       summarise(
+        rfmaxboot = boot(ratiofmax, function(dx,y){mean(dx[y])}, R=1000) %>% boot.ci(type = "norm") %>% {.$normal[3]},  # max upper 
+        rfminboot = boot(ratiofmin, function(dx,y){mean(dx[y])}, R=1000) %>% boot.ci(type = "norm") %>% {.$normal[2]},  # min lower
+        
         across(starts_with("ratio"), mean,na.rm=T),
         across(c( "refEvent", "lstTypeEvent", "LibelleEvent_NEW", "LibelleEvent_NEW_VZ", "YearEvent", "libelleFestival_NEW_VZ", "ab", "PFIAF category", "nf"), first)
+        
       ) %>% 
        mutate(tool=paste0(
          LibelleEvent_NEW_VZ, 
@@ -344,6 +352,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
          ", nfilms=", nf
        )) 
      
+  
     # system averages
     sysdivs0 = d %>% 
       left_join(gratios, by = "refFilm") %>% 
@@ -354,11 +363,16 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
       group_by(EventID_VZ) %>% 
       mutate(ws = 1/n_distinct(refFilm)) %>% 
       ungroup()
+    
     sysdivs = rbind(sysdivs0, sysdivs0 %>% mutate(ab="Both")) %>% 
       group_by(ab, YearEvent) %>% 
-      summarize(across(starts_with("ratio"), weighted.mean, w=ws, na.rm=T)) %>% 
-      ungroup() %>% 
-      rename(sysdiv=ratiof, supper=ratiofmax, slower=ratiofmin)
+      summarize(
+        rfmaxboot = boot(ratiofmax, function(dx,y){weighted.mean(dx[y], w=ws[y])}, R=1000) %>% boot.ci(type = "norm") %>% {.$normal[3]},  # max upper 
+        rfminboot = boot(ratiofmin, function(dx,y){weighted.mean(dx[y], w=ws[y])}, R=1000) %>% boot.ci(type = "norm") %>% {.$normal[2]},  # min lower
+        across(starts_with("ratio"), weighted.mean, w=ws, na.rm=T), 
+        .groups = "drop"
+          ) %>% 
+      rename(sysdiv=ratiof, supper=rfmaxboot, slower=rfminboot)
     
     info = paste(length(unique(filmfestvecs$refFilm)), "unique films," ,
                  length(unique(filmfestvecs$EventID_VZ)), "unique fests,", 
@@ -390,7 +404,8 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
     filmfestvecs=filmfestvecs0 %>% mutate(tmpweight=weight)
   }
   filmfestvecs = filmfestvecs %>%  
-    group_by(EventID_VZ) %>% mutate(exweight = tmpweight*(1/n_distinct(refFilm))) %>% 
+    group_by(EventID_VZ) %>% 
+    mutate(exweight = tmpweight*(1/n_distinct(refFilm))) %>% 
     select(-tmpweight) %>% 
     
     # add festival main type, using original label
@@ -488,7 +503,7 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
   }
   
   # System internal diversity
-  #disttomean(filmfestvecs %>% filter(ab=="A"), fmv, w=x$weight, maxexdist, geo=metatype=="geo", divmult=2)
+  # uses external diversity weights, because need to account for both n tags per films AND n films per fests, as the MAD is calculated across all films.
   sysdivs = filmfestvecs %>% 
     rbind(filmfestvecs %>% mutate(ab="Both")) %>% 
     filter(YearEvent>=2012) %>% # hard filter here, early years have too little data
@@ -496,13 +511,13 @@ dofestvecs=function(fesfilm2, metatype, sortvar, lat, filmkinds, fixes=NULL,
     group_split() %>% 
     lapply(function(x){
       if(metatype=="geo"){
-        fmean=geomean(x %>% filter(!is.na(lat)) %>% select(long, lat), x$weight) 
+        fmean=geomean(x %>% filter(!is.na(lat)) %>% select(long, lat), x$exweight) 
         colnames(fmean)=c("long", "lat")
       } else {
-        fmean = summarise(x, across( starts_with("V"), weighted.mean, w=x$weight, na.rm=T)) %>% as.matrix # year mean
+        fmean = summarise(x, across( starts_with("V"), weighted.mean, w=x$exweight, na.rm=T)) %>% as.matrix # year mean
       }
       #  system internal diversity + bootstrapped confidence
-      di = disttomean(x, fmean, w=x$weight, maxdist, geo=metatype=="geo", divmult=2)
+      di = disttomean(x, fmean, w=x$exweight, maxdist, geo=metatype=="geo", divmult=2)
       return(tibble(sysdiv=di[1], slower=di[2], supper=di[3], 
                     YearEvent=x$YearEvent[1], ab=x$ab[1], nf=nrow(x)  ))
     }
