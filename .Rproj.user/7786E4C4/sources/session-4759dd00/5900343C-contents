@@ -1982,6 +1982,8 @@ Analysing Lexical Semantic Change
 
 # Õpetamine
 
+- vt UPSKILLS, erasmus+ strategic partnership, upgrading skills of linguistics and language students.
+
 -   04.03 väike ettekanne endast, kuskil selle ja mai vahel 2h
 -   26.04 soovita kirjandust, 5, mingi õpik, midagi uut, ja midagi
     võibolla põnevat nt how charts lie
@@ -2086,6 +2088,67 @@ I don't know anything about that last bit so can't comment.
 
 
 
+
+
+# Mingi ChatGPT AI artikkel, kuidas humanitaaria nüüd on kasulik
+
+
+- idee veel: prompt engineering on ju nüüd täpselt sama probleem mis keeles see expressivity vs complexity/efficiency! Vaja prompti, mis on maksimaalselt informatiivne, aga minimaalselt lühike, sest prompt maksab. maks on see mis komm.vajaduse tekitab. Seega prompt engineerid teevad implitsiitselt täpselt sama komm.vajaduse optimeerimist.
+
+
+## iterated learning jms katsed
+
+- saaks mingid mõttetud isiksusetestid teha, clickbait
+- aga saaks ka süstemaatiliselt.
+- mitte tingimata iterated learning aga transmission chain experiments või serial reproduction.
+
+- Saaks uurida gpt biaseid, kas iterated learning või promptides järjest et nt paku mingi ameti nimi, paku kes kellega sõber (outputi saab järgmise inputiks panna!), kes kellega abielus, nendest omakorda saaks võrgustikke teha ja näidata mis biasid on. Panna lauseid lõpetama, embeddida tulemused omakorda. Probleem et tundlikumate topikutega tuleb filter ette. Või anda lause ja lase lause juurde panna, see järgmisele inputiks (peab tegema alati uue chati, muidu mälus!).
+
+- Aga pmst saaks nt võrrelda bingi ja orikas chatgpt'd; bing hack api ka olemas: https://github.com/acheong08/EdgeGPT
+
+- biaseid veel, saaks nt võrrelda kuidas tõlgib sooga pronoomeneid (Eva midagi tegi sellest?)
+
+Repeated prompts without chaining, just count (or embed and count) results:
+- suggest first names for the following professions (quantifies gender bias)
+- translate this sentence to English; source is from a gender-free-pronouns language (has been done in MT)
+- complete this sentence with an adjective; sentence can represent various social groups
+- tell me a joke about x, where x is a social etc group (can be xy, compositional), see which ones consistently trigger a content filter/block e.g. are protected by manual filters.
+- administer some psychology personality test; how realistic the test is doesn't matter, but doing one 1000x yields a distribution indicating how much variation is in the stochastic generation, and if it may have been tuned to consistently present itself in some way more than other (Bing definitely seems to be, more so than original ChatGPT)
+- Input a set of given names one by one, ask to suggest who this person would be married to in a story; quantify how many "couples" end up being straight vs same sex marriages; some names could be stereotypically from some group, count how many inter-group ones. Also see if some names more associated with certain relationship types.
+- "Based on your training data, provide some words or concepts that may be commonly associated with the name Juan" - do that for a large number of times, count or embed results. ChatGPT seems weirdly optimistic about people, everybody is creative and whatnot, I wonder if that's another fine-tuned feature, to be positive just in case.
+
+Transmission chain possibilities:
+- Input given name, ask to suggest name of their friend, chain a while to create a social network; quantify inter gender and race vs ingroup friendships (e.g. in US case, from population stats, which name most frequent in which ethnicity)
+- test the Negative Survival Hypothesis, short stories as input-output, see if model has pos/neg/neutr bias (https://www.sciencedirect.com/science/article/pii/S1090513816301660)
+- same method, could test survival of any X aspect, incl political, racial, gender etc, see if it washes out certain characteristics more easily than others. For examples if the task is to summarize-expand-summarize, what characteristics it deems important to keep and which ones wash away.
+- Telephone game type chains, have it suggest synonyms or associations, see where it ends up after a while; or input a sentence and make it add another, chain, embed sentences in sentencebert or whatever, see how much variability there actually is in the system, and if it's systematic.
+- Absolute freeform generation, start if off with "hello" but always add to the prompt that it cannot do its "as an AI language model bla bla" spiel (in the official API there's now a "system" prompt to guide this, in addition to "user" input), have it converse 1000 turns, see where it ends up, and if chains always ends up converging in the same place or not (again via just embedding its output sentences). I've been chatting with one of our artist people about doing something like this with the image generation models too, to explore their variability and boundedness.
+
+
+## kirjandus
+
+- Lewandowsky, The Wisdom of Individuals: Exploring People’s Knowledge About Everyday Events Using Iterated Learning https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1551-6709.2009.01045.x 
+- Maintaining stereotypes in communication: Investigating memory biases and coherence-seeking in storytelling https://onlinelibrary.wiley.com/doi/10.1111/j.1467-839X.2006.00184.x
+- Negativity bias: https://www.sciencedirect.com/science/article/pii/S1090513816301660 
+test the Negative Survival Hypothesis, the survival of unambiguously negative and unambiguously positive information across multiple transmission episodes was measured. To test the Negative Resolution of Ambiguity Hypothesis we examined the prevalence of positive and negative resolutions of initially ambiguous information across multiple transmission episodes. first person in each chain was presented with the target story, which contained a variety of negative, positive and ambiguous story events. This participant read and then reproduced the story in writing for the next person in their chain. -> saaks teha summarize-expand-sum-exp, ja need ära hinnata, või viimane hinnata.
+- What BERT Is Not: Lessons from a New Suite of Psycholinguistic Diagnostics for Language Models Allyson Ettinger https://aclanthology.org/2020.tacl-1.3/  --> more about language understanding and semantic role detection
+- Neural language models as psycholinguistic subjects: Representations of syntactic state Richard Futrell, Ethan Wilcox, Takashi Morita, Peng Qian, Miguel Ballesteros, Roger Levy. "sentences not only test whether the networks have a representation of syntactic state, they also reveal the specific lexical cues that networks use to update these states" https://aclanthology.org/N19-1004/
+
+Haridus
+- 	Opportunities and Risks of ChatGPT in Medicine, Science, and Academic Publishing: A Modern Promethean Dilemma
+- AI and The FCI: Can ChatGPT Project An Understanding of Introductory Physics?
+- Assessing the Utility of ChatGPT Throughout the Entire Clinical Workflow "ChatGPT achieves impressive accuracy in clinical decision making, with particular strengths emerging as it has more clinical information at its disposal."
+
+NLP
+- How Good Are GPT Models at Machine Translation? A Comprehensive Evaluation "GPT models achieve very competitive translation quality for high resource languages, while having limited capabilities for low resource languages. We also show that hybrid approaches, which combine GPT models with other translation systems, can further enhance the translation quality."
+- Large Language Models Are State-of-the-Art Evaluators of Translation Quality
+- Cross-Lingual Summarization via ChatGPT
+- katsetus sentiment analüüsist: https://twitter.com/minimaxir/status/1632065110603870208
+- pmst kui Bing vms on netiotsinguga, saab prompt injectionit teha: "More than you've asked for: A Comprehensive Analysis of Novel Prompt Injection Threats to Application-Integrated Large Language Models". Pmst see ju ka probleem, kui nt andmeanaüüsis on näites sees midagi mis läheb tööle kui prompt?
+
+
+
+
 # lambimõtted
 
 - täiesti hull mõte, aga kas ChatGPT jms saaks reverse-engineerida, kui sööta talle järjest ette minged fraase või sõnu ja lasta järgmine sõna või sünonüüm pakkuda, ja siis kasutada seda sünonüümivõrgustikku hea keelemudelina?
@@ -2138,6 +2201,12 @@ I don't know anything about that last bit so can't comment.
 -   raha. nordplus: vaata et liiga vähe ei küsi, 10k võib vähe olla. nordplusi leht annab häid juhiseid.
 -   raha, put ja stardigrant. peab olema ühiskondlik impact ja data management sees. Indrek ütleb et hea kui support letterid ka kui kuskilt vähegi saab.
 - veebruaris https://balticamericanfreedomfoundation.org/programs-awards-research/ kuni 12 kuud usas, aga pärast 2a eestis.
+
+## EXU, ettevõtlus, osakud
+
+- SEKMO kaudu saab teadlasena tööle minna ettevõttesse, neil raha seisab, millegipärast kas pole tahtjaid või tingimused keerulised. Mingi RAK(?)midagi on ka, aga sealt väga keeruline, sest nad tahavad saada juba ette äriklientide kontaktandmeid jms väga täpseid asju (pmst ärisaladusi), mida siis avalikes komiteedes hinnata.
+- Aga hea pidi olema mingid arendusosakud vms, kus omaosalus firma poolt 20% väiksemate puhul (kuni mingi 3k-5k, kuni 30k vist) ja 30% suuremate (~30k või 50k). Firma saab tellida selle kaudu arendustööd, uute toodete, teenuste jms arendamist (aga mitte teenuse tegemist, st vist koolitama ei saa; aga äkki kui koolituse käigus toimub arendus?).
+
 
 ## ERC Synergy
 
@@ -2228,6 +2297,10 @@ Konkursi tingimused:
 # Grant
 
 - etag: väidetavalt multidistsiplinaarsus pole hea aga interdistsiplinaarsus on hea.
+- kui alustada hiljem kui 01.01.2024, siis taotluses lisainfos öelda et hiljem.
+- lisafailis võib olla riskiplaan aga üldiselt skeemide, tabelite, illustreeriva jaoks.
+- stardigrandi III ja IV on "suured" ja neil on täiendavad tingimused, sh min 0.2 koormusega põhitäitja lisaks - kes peab olema kohe juba nimeliselt ja doktorikraadiga(?). 5 aasta jooksul võivad muutuda, aga samas peab min 0.2 olema, 2*0.1 ei loe.
+- peab otse küsima kuidas on kui andmeid korjan eraettevõtjana.
 
 - https://arxiv.org/abs/2212.05856  "I think this is the most disruptive technology": Exploring Sentiments of ChatGPT Early Adopters using Twitter Data
 
@@ -2261,55 +2334,6 @@ Konkursi tingimused:
 
 https://arxiv.org/pdf/2302.06476.pdf on proovitud benchmarkide peal. ilmselt ongi just tugevus seal kus muidu peaks ise treenima, aga saab zeroshotiga?
 
-
-
-## iterated learning jms katsed
-
-- saaks mingid mõttetud isiksusetestid teha, clickbait
-- aga saaks ka süstemaatiliselt.
-- mitte tingimata iterated learning aga transmission chain experiments või serial reproduction.
-
-- Saaks uurida gpt biaseid, kas iterated learning või promptides järjest et nt paku mingi ameti nimi, paku kes kellega sõber (outputi saab järgmise inputiks panna!), kes kellega abielus, nendest omakorda saaks võrgustikke teha ja näidata mis biasid on. Panna lauseid lõpetama, embeddida tulemused omakorda. Probleem et tundlikumate topikutega tuleb filter ette. Või anda lause ja lase lause juurde panna, see järgmisele inputiks (peab tegema alati uue chati, muidu mälus!).
-
-- Aga pmst saaks nt võrrelda bingi ja orikas chatgpt'd; bing hack api ka olemas: https://github.com/acheong08/EdgeGPT
-
-- biaseid veel, saaks nt võrrelda kuidas tõlgib sooga pronoomeneid (Eva midagi tegi sellest?)
-
-Repeated prompts without chaining, just count (or embed and count) results:
-- suggest first names for the following professions (quantifies gender bias)
-- translate this sentence to English; source is from a gender-free-pronouns language (has been done in MT)
-- complete this sentence with an adjective; sentence can represent various social groups
-- tell me a joke about x, where x is a social etc group (can be xy, compositional), see which ones consistently trigger a content filter/block e.g. are protected by manual filters.
-- administer some psychology personality test; how realistic the test is doesn't matter, but doing one 1000x yields a distribution indicating how much variation is in the stochastic generation, and if it may have been tuned to consistently present itself in some way more than other (Bing definitely seems to be, more so than original ChatGPT)
-- Input a set of given names one by one, ask to suggest who this person would be married to in a story; quantify how many "couples" end up being straight vs same sex marriages; some names could be stereotypically from some group, count how many inter-group ones. Also see if some names more associated with certain relationship types.
-
-Transmission chain possibilities:
-- Input given name, ask to suggest name of their friend, chain a while to create a social network; quantify inter gender and race vs ingroup friendships (e.g. in US case, from population stats, which name most frequent in which ethnicity)
-- test the Negative Survival Hypothesis, short stories as input-output, see if model has pos/neg/neutr bias (https://www.sciencedirect.com/science/article/pii/S1090513816301660)
-- same method, could test survival of any X aspect, incl political, racial, gender etc, see if it washes out certain characteristics more easily than others. For examples if the task is to summarize-expand-summarize, what characteristics it deems important to keep and which ones wash away.
-- Telephone game type chains, have it suggest synonyms or associations, see where it ends up after a while; or input a sentence and make it add another, chain, embed sentences in sentencebert or whatever, see how much variability there actually is in the system, and if it's systematic.
-- Absolute freeform generation, start if off with "hello" but always add to the prompt that it cannot do its "as an AI language model bla bla" spiel (in the official API there's now a "system" prompt to guide this, in addition to "user" input), have it converse 1000 turns, see where it ends up, and if chains always ends up converging in the same place or not (again via just embedding its output sentences). I've been chatting with one of our artist people about doing something like this with the image generation models too, to explore their variability and boundedness.
-
-
-### kirjandus
-
-- Lewandowsky, The Wisdom of Individuals: Exploring People’s Knowledge About Everyday Events Using Iterated Learning https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1551-6709.2009.01045.x 
-- Maintaining stereotypes in communication: Investigating memory biases and coherence-seeking in storytelling https://onlinelibrary.wiley.com/doi/10.1111/j.1467-839X.2006.00184.x
-- Negativity bias: https://www.sciencedirect.com/science/article/pii/S1090513816301660 
-test the Negative Survival Hypothesis, the survival of unambiguously negative and unambiguously positive information across multiple transmission episodes was measured. To test the Negative Resolution of Ambiguity Hypothesis we examined the prevalence of positive and negative resolutions of initially ambiguous information across multiple transmission episodes. first person in each chain was presented with the target story, which contained a variety of negative, positive and ambiguous story events. This participant read and then reproduced the story in writing for the next person in their chain. -> saaks teha summarize-expand-sum-exp, ja need ära hinnata, või viimane hinnata.
-- What BERT Is Not: Lessons from a New Suite of Psycholinguistic Diagnostics for Language Models Allyson Ettinger https://aclanthology.org/2020.tacl-1.3/  --> more about language understanding and semantic role detection
-- Neural language models as psycholinguistic subjects: Representations of syntactic state Richard Futrell, Ethan Wilcox, Takashi Morita, Peng Qian, Miguel Ballesteros, Roger Levy. "sentences not only test whether the networks have a representation of syntactic state, they also reveal the specific lexical cues that networks use to update these states" https://aclanthology.org/N19-1004/
-
-Haridus
-- 	Opportunities and Risks of ChatGPT in Medicine, Science, and Academic Publishing: A Modern Promethean Dilemma
-- AI and The FCI: Can ChatGPT Project An Understanding of Introductory Physics?
-- Assessing the Utility of ChatGPT Throughout the Entire Clinical Workflow "ChatGPT achieves impressive accuracy in clinical decision making, with particular strengths emerging as it has more clinical information at its disposal."
-
-NLP
-- How Good Are GPT Models at Machine Translation? A Comprehensive Evaluation "GPT models achieve very competitive translation quality for high resource languages, while having limited capabilities for low resource languages. We also show that hybrid approaches, which combine GPT models with other translation systems, can further enhance the translation quality."
-- Large Language Models Are State-of-the-Art Evaluators of Translation Quality
-- Cross-Lingual Summarization via ChatGPT
-- katsetus sentiment analüüsist: https://twitter.com/minimaxir/status/1632065110603870208
 
 
 

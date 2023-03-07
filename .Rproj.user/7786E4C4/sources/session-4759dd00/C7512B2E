@@ -3,7 +3,7 @@
     "path": "~/GitHub/andreskarjus.github.io/cudan/paperplots.qmd",
     "project_path": null,
     "type": "quarto_markdown",
-    "hash": "0",
+    "hash": "440998202",
     "contents": "",
     "dirty": false,
     "created": 1677599617189.0,
@@ -13,15 +13,15 @@
         "rmdVisualMode": "false",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "1098,14",
-        "scrollLine": "1083"
+        "cursorPosition": "1205,6",
+        "scrollLine": "1200"
     },
     "folds": "",
-    "lastKnownWriteTime": 1678023245,
+    "lastKnownWriteTime": 1678143356,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1678023245863,
+    "last_content_update": 1678143356901,
     "read_only": false,
     "read_only_alternatives": []
 }
