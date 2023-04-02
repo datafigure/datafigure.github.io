@@ -33,5 +33,12 @@
     "title": "Workshops",
     "section": "R, data wrangling, data visualization",
     "text": "R, data wrangling, data visualization\n\n\n\nMostly been beginner-level practical workshops, often aimed at people with advanced skills in their discipline (such as humanities or social science), but little to no programming skills. A typical 1-day workshop consist of an introduction to R and basic exercises, followed by data visualization and/or wrangling exercises. Why start with dataviz? Because (1) it is an integral component of doing science anyway, and (2) it’s more fun to learn programming when you can immedately see and interpret the results of your first coding attempts (and making nice plots in R is very easy and intuitive, especially with packages like ggplot2 and plotly)."
+  },
+  {
+    "objectID": "media.html",
+    "href": "media.html",
+    "title": "Coverage and mentions in Estonian media",
+    "section": "",
+    "text": "Äripäev radio/podcast Õppetund on how AI affects the professional training and adult education sector\nTallinn University + PostimeesTV Ekspert Eetris, interview with Andres on AI and ChatGPT in education\nBFM Luna TV clip on ChatGPT usage among students\nPostimees interview with Andres and other experts in AI and education\nNews piece in Pealinn on Tallinn city enterpreneurship prizes 2022, including Andres & colleagues for their media monitoring AI prototype in collaboration with AS Ekspress Grupp."
   }
 ]

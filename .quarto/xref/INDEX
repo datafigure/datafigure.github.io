@@ -28,5 +28,8 @@
   },
   "reports/chatgpt_eng.qmd": {
     "chatgpt_eng.html": "569766b7"
+  },
+  "media.qmd": {
+    "media.html": "89840f02"
   }
 }

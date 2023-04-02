@@ -13,6 +13,8 @@ website:
         text: Past workshops
       - consulting.qmd
       - contact.qmd
+      - href: media.qmd
+        text: Media coverage
 format:
   html:
     theme: sandstone
