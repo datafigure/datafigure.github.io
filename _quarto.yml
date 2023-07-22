@@ -12,9 +12,9 @@ website:
       - href: past.qmd
         text: Past workshops
       - consulting.qmd
-      - contact.qmd
       - href: media.qmd
         text: Media coverage
+      - contact.qmd
 format:
   html:
     theme: sandstone
