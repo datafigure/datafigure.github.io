@@ -6,6 +6,7 @@ This is a running list of all past workshops.
 
 **2023**
 
+- Fall 2023: more AI workshops and lectures, for schools, teachers' unions, Government Office of Estonia (Riigikantselei), the Estonian Unemployment Insurance Fund, and more.
 - Summer 2023: more AI workshops, and a workshop on R & dataviz at the MEDAL Summer School of Linguistics
 - Spring 2023: multiple AI-related workshops at Estonian companies, universities, schools, and the Ministry of Culture.
 - "Generative AI: ChatGPT, Stable Diffusion and other machines that generate text, images and content". Workshops at Tallinn University / Baltic Film, Media and Arts School. 20 March 2023.

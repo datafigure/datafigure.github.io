@@ -15,10 +15,10 @@ p {
 
 
 
-We organize workshops on programming in R, data visualization, data wrangling, corpus linguistics, machine learning, and Artificial Intelligence (including recent workshops on the impact of ChatGPT and generative AI on the education sector).<br>
-The format and level is flexible - past events have ranged from short intros to multi-day advanced seminars. Besides standalone events, venues have included summer schools, academic retreats, invited lectures, and international conferences and hackathons, so far in 5 countries across Europe.
+We organize workshops on programming in R, data visualization, data wrangling, corpus linguistics, machine learning, and artificial intelligence.<br>
+The format and level is flexible - past events have ranged from short intros to multi-day advanced seminars. Besides private events for private and public sector entities, past venues have included summer schools, academic retreats, and international conferences, so far in 5 countries across Europe.
 
-Below is a list of the types of workshops organized in the past. However, all the training events we do are customized and adapted to the audience, so the same exact event is seldom repeated twice.
+Below is a list of the types of workshops organized in the past. All the training events we do are customized and adapted to the audience, so the same exact event or lecture would be seldom repeated more than once. Get in touch to discuss options. Events can be delivered in English or Estonian.
 
 
 
@@ -30,7 +30,7 @@ Below is a list of the types of workshops organized in the past. However, all th
 
 :::{}
 
-Mostly been beginner-level practical workshops, often aimed at people with advanced skills in their discipline (such as humanities or social science), but little to no programming skills. A typical 1-day workshop consist of an introduction to R and basic exercises, followed by data visualization and/or wrangling exercises. Why start with dataviz? Because (1) it is an integral component of doing science anyway, and (2) it's more fun to learn programming when you can immedately see and interpret the results of your first coding attempts (and making nice plots in R is very easy and intuitive, especially with packages like ggplot2 and plotly).
+These have mostly been beginner-level practical workshops, often aimed at people with advanced skills in their discipline (such as humanities or social science), but little to no programming skills. A typical 1-day workshop consist of an introduction to R and basic exercises, followed by data visualization and/or wrangling exercises. Why start with dataviz? Because (1) it is an integral component of doing science anyway, and (2) it's more fun to learn programming when you can immedately see and interpret the results of your first coding attempts (and making nice plots in R is very easy and intuitive, especially with packages like ggplot2 and plotly).
 
 :::
 
@@ -48,24 +48,26 @@ Mostly been beginner-level practical workshops, often aimed at people with advan
 ::::
 
 
+# Generative AI
+
+:::{layout="[3,1]"}
+These digital skills seminar and lectures have focused on generative AI like ChatGPT, and how these technological advances are affecting education, learning, teaching and the workplace, now and in the near future. Audiences have ranged from schools and universities to private companies to public and government offices. Content is either focused on the education questions, or practical applicable skills and how to use AI to speed up tasks at work. Formats include shorter lectures and longer seminars with an overview lecture component followed by groupwork and brainstorming.
+
+![](img/0.jpg)
 
 
+
+
+
+
+:::
 
 # Hackathons
 
 :::{layout="[3,1]"}
-The Hackathons have been usually combined with a preceding programming intro workshop. Our job is to introduce a topic and possibly datasets, facilitate groupwork, propose and assist with technical solutions and issues.
+The hackathons have been usually combined with a preceding programming intro workshop. Our job is to introduce a topic and possibly datasets, facilitate groupwork, propose and assist with technical solutions and issues.
 
 ![](img/3.jpg)
-
-:::
-
-# Impact of generative Artificial Intelligence
-
-:::{layout="[3,1]"}
-These digital skills seminar events have focused on generative AI like ChatGPT, and how these technological advances may affect education, learning and teaching now and in the near future. Overview lecture in the first half, group discussions and brainstorming in the second half.
-
-![](img/0.jpg)
 
 :::
 
