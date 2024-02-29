@@ -2,6 +2,7 @@
 title: "Coverage and mentions in Estonian media"
 ---
 
+- Coverage in the Kanal2 TV channel [Reporter evening show](https://reporter.kanal2.ee/7970308/viljandi-opetajad-tutvusid-tehisaruga-mis-laste-eest-koolitood-koik-ara-teeb) from a workshop for the Viljandi Education Foundation
 - Coverage in the [Pärnu Postimees](https://parnu.postimees.ee/7947105/parnu-keskraamatukogu-keskendus-sunnipaeval-tehisarule) about a discussion panel at the Pärnu library on AI and authorship
 - Public lecture "Dangers and opportunities of generative AI" (in Estonian) via [Postimees TV](https://haridus.postimees.ee/7872884/avalik-loeng-tehisintellekt-kas-karta-voi-kasutada) (recording available at link)
 - Interview segment in the ["Evening!"](https://duoplay.ee/5826/ohtu?ep=749) talk show of Kanal 2 
