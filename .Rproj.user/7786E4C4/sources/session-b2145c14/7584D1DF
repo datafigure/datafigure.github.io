@@ -3,7 +3,7 @@
     "path": "~/GitHub/datafigure.github.io/index.qmd",
     "project_path": "index.qmd",
     "type": "quarto_markdown",
-    "hash": "1499727233",
+    "hash": "647455680",
     "contents": "",
     "dirty": false,
     "created": 1741526247865.0,
@@ -12,17 +12,17 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "19,29",
-        "scrollLine": "11",
+        "cursorPosition": "37,363",
+        "scrollLine": "27",
         "docOutlineSize": "112",
         "docOutlineVisible": "1"
     },
     "folds": "",
-    "lastKnownWriteTime": 1741542026,
+    "lastKnownWriteTime": 1741543119,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741542026399,
+    "last_content_update": 1741543119352,
     "read_only": false,
     "read_only_alternatives": []
 }
