@@ -2,11 +2,12 @@
 title: "Konsultatsiooniteenused"
 ---
 
-Pakume ka konsultatsiooniteenuseid järgmistel teemadel:
+Pakume ka konsultatsiooniteenuseid:
 
 - Tehisintellekti ja masinõppe rakendamine protsesside automatiseerimisel ja analüütikas
 - Tehisintellekti rakendused ning nende mõju hindamine teaduses ja hariduses
-- Keeletehnoloogia, statistika ja masinõpe, eriti suurte andmestike kontekstis
+- Õppekavade, töökavade ja sisekoolituste uuendamine, sh [TI-hüpe](https://tihupe.ee/) kontekstis
+- Keeletehnoloogia, statistika ja masinõpe, eriti suurte andmestike kontekstis; projektipõhised analüüsitööd
 - Statistika, programmeerimise jms digioskuste õpetamine haridusasutustes ja sisekoolitustel
 - Küsimuste korral tasub ühendust võtta ja arutada!
 

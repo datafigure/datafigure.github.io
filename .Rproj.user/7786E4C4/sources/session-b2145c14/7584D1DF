@@ -3,7 +3,7 @@
     "path": "~/GitHub/datafigure.github.io/index.qmd",
     "project_path": "index.qmd",
     "type": "quarto_markdown",
-    "hash": "647455680",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1741526247865.0,
@@ -12,8 +12,8 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "37,363",
-        "scrollLine": "27",
+        "cursorPosition": "26,425",
+        "scrollLine": "18",
         "docOutlineSize": "112",
         "docOutlineVisible": "1"
     },
