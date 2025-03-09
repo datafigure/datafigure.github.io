@@ -1,2 +1,120 @@
 /* css styles */
 
+a, a:link, a:visited {
+    color: #858f9e !important;  
+    text-decoration: none !important;
+}
+
+/* Override hover and focus colors */
+a:hover, a:focus {
+    color: #000000 !important;  /* Black */
+}
+
+
+
+/* Force navbar brand (title) to always be black */
+.navbar-brand,
+.navbar-brand:link,
+.navbar-brand:visited {
+    color: black !important;
+    text-decoration: none !important; /* Remove underline */
+}
+
+/* Ensure it stays black even when hovered or active */
+.navbar-brand:hover,
+.navbar-brand:focus,
+.navbar-brand:active {
+    color: black !important;
+    text-decoration: none !important;
+}
+
+/* If Bootstrap is forcing colors from navbar-dark or navbar-light, override it */
+.navbar-dark .navbar-brand,
+.navbar-light .navbar-brand {
+    color: #48a105 !important;
+}
+
+
+
+
+
+/* Override active link color inside the TOC (Table of Contents Sidebar) */
+#TOC .nav-link.active {
+    color: #000000 !important;  /* Black text */
+    background-color: transparent !important;  /* No background */
+    margin-left: -2px !important; /* Ensure no shifting */
+}
+
+/* Ensure hover effect is correct */
+#TOC .nav-link:hover {
+    color: #000000 !important;  /* Stay black on hover */
+}
+
+/* Remove any inherited red styling */
+#TOC .nav-link.active,
+#TOC .nav-link[aria-current="page"] {
+    border-left: 3px solid #000000 !important;  /* Black sidebar indicator */
+}
+
+
+
+/* Top navbar links (normal state) */
+.navbar .nav-link {
+    color: #000000 !important;  /* Black text */
+    text-transform: lowercase;  /* Ensure text is not uppercase */
+    font-variant: small-caps !important;  /* Convert to small caps */
+    font-size: 1em !important; /* Slightly smaller font */
+}
+
+/* Top navbar links on hover */
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+    color: #858f9e !important;  
+    text-decoration: none !important;  /* Remove any underline */
+}
+
+/* Top navbar active (current) link */
+.navbar .nav-link.active {
+    color: #000000 !important;  /* Black for active page */
+    font-variant: small-caps !important;  /* Keep small caps */
+    font-size: 1em !important; /* Ensure consistent size */
+    background-color: transparent !important; /* No background */
+}
+
+
+
+
+.navbar .navbar-header,
+.navbar-collapse {
+    float:none;
+    display:inline-block;
+    vertical-align: top;
+}
+
+@media (max-width: 768px) {
+    .navbar-collapse  {
+        display: block;
+    }
+}
+
+
+
+
+/* max page width */
+.container-fluid {
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 950px; /* or 950px */
+}
+
+
+
+
+h1.title {
+    font-size: 1.7rem !important; /* Adjust as needed */
+}
+
+/* Reduce the size of all H1 headings */
+h1 {
+    font-size: 1.3rem !important; /* Adjust as needed */
+}

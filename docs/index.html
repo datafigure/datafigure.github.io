@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Datafigure - Workshops</title>
+<title>Datafigure - Koolitused ja konsulteerimine</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -24,13 +24,8 @@ ul.task-list li input[type="checkbox"] {
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
 <link href="./fav.png" rel="icon" type="image/png">
+<script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -41,12 +36,6 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
-  "location": "navbar",
-  "copy-button": false,
-  "collapse-after": 3,
-  "panel-placement": "end",
-  "type": "overlay",
-  "limit": 20,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -82,26 +71,25 @@ ul.task-list li input[type="checkbox"] {
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
     <a class="nav-link active" href="./index.html" rel="" target="" aria-current="page">
- <span class="menu-text">Workshops</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./past.html" rel="" target="">
- <span class="menu-text">Past workshops</span></a>
+ <span class="menu-text">Koolitused</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./consulting.html" rel="" target="">
- <span class="menu-text">Consulting</span></a>
+ <span class="menu-text">Konsult</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./media.html" rel="" target="">
- <span class="menu-text">Media coverage</span></a>
+    <a class="nav-link" href="./past.html" rel="" target="">
+ <span class="menu-text">Tööd ja kajastus</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./contact.html" rel="" target="">
- <span class="menu-text">Contact</span></a>
+ <span class="menu-text">Kontakt</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./english.html" rel="" target="">
+ <span class="menu-text">In English</span></a>
   </li>  
 </ul>
-              <div id="quarto-search" class="" title="Search"></div>
           </div> <!-- /navcollapse -->
       </div> <!-- /container-fluid -->
     </nav>
@@ -113,10 +101,12 @@ ul.task-list li input[type="checkbox"] {
     <nav id="TOC" role="doc-toc" class="toc-active">
    
   <ul>
-  <li><a href="#r-data-wrangling-data-visualization" id="toc-r-data-wrangling-data-visualization" class="nav-link active" data-scroll-target="#r-data-wrangling-data-visualization">R, data wrangling, data visualization</a></li>
-  <li><a href="#generative-ai" id="toc-generative-ai" class="nav-link" data-scroll-target="#generative-ai">Generative AI</a></li>
-  <li><a href="#hackathons" id="toc-hackathons" class="nav-link" data-scroll-target="#hackathons">Hackathons</a></li>
-  <li><a href="#custom-workshops" id="toc-custom-workshops" class="nav-link" data-scroll-target="#custom-workshops">Custom Workshops</a></li>
+  <li><a href="#tehisintellekt-ja-haridus" id="toc-tehisintellekt-ja-haridus" class="nav-link active" data-scroll-target="#tehisintellekt-ja-haridus">Tehisintellekt ja haridus</a></li>
+  <li><a href="#tehisintellekt-ja-organisatsioon" id="toc-tehisintellekt-ja-organisatsioon" class="nav-link" data-scroll-target="#tehisintellekt-ja-organisatsioon">Tehisintellekt ja organisatsioon</a></li>
+  <li><a href="#ai-ja-analüütika" id="toc-ai-ja-analüütika" class="nav-link" data-scroll-target="#ai-ja-analüütika">AI ja analüütika</a></li>
+  <li><a href="#andmeteadus-ja-r" id="toc-andmeteadus-ja-r" class="nav-link" data-scroll-target="#andmeteadus-ja-r">Andmeteadus ja R</a></li>
+  <li><a href="#häkatonid" id="toc-häkatonid" class="nav-link" data-scroll-target="#häkatonid">Häkatonid</a></li>
+  <li><a href="#kohandatud-koolitused-ja-erilahendused" id="toc-kohandatud-koolitused-ja-erilahendused" class="nav-link" data-scroll-target="#kohandatud-koolitused-ja-erilahendused">Kohandatud koolitused ja erilahendused</a></li>
   </ul>
 </nav>
 </nav>
@@ -128,7 +118,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Workshops</h1>
+<h1 class="title">Koolitused ja konsulteerimine</h1>
 </div>
 
 
@@ -148,39 +138,56 @@ p {
   text-align: justify !important
 }
 </style>
-<p>We organize workshops on programming in R, data visualization, data wrangling, corpus linguistics, machine learning, and artificial intelligence.<br> The format and level is flexible - past events have ranged from short intros to multi-day advanced seminars. Besides internal events for private and public sector entities, past venues have included public workshops, summer schools, academic retreats, and international conferences, so far in 5 countries across Europe. Below is a list of the types of workshops organized in the past. All the training events we do are customized and adapted to the audience, so the same exact event or lecture would be seldom repeated more than once. Feel free to get in touch to discuss options. Events can be delivered in English or Estonian.</p>
-<section id="r-data-wrangling-data-visualization" class="level2">
-<h2 class="anchored" data-anchor-id="r-data-wrangling-data-visualization">R, data wrangling, data visualization</h2>
+<p>Datafigure OÜ korraldab tehisintellekti (AI), andmeteaduse, programmeerimise ja muude digipädevuste alaseid koolitusi, töötubasid ja ettekandeid. Võimalik on tellida ka üks-ühele juhendamist, ekspertarvamust, konsulteerimist ja projektipõhiseid töid. <br> Koolituste puhul on formaat ja tase paindlikud - oleme korraldanud üritusi pikkusega poolest tunnist mitme päevani ja nii algajatele kui oma ala professionaalidele. Seda nii erinevate ürituste (nt konverentside) raames, online-koolituste sarjades kui kohapeal sisekoolitustena. Meie klientideks on nii era- kui avalik sektor, koolid ja kõrgkoolid, riigiasutused kui kolmas sektor, ja nii Eestis kui mujal Euroopas. <br> Allpool on kirjeldatud siiani toimunud koolituste peamised tüübid. Iga koolitus on kohandatud kliendi soovide ja vajaduste järgi, ja materjale uuendatakse pidevalt, sest kõnealused tehnoloogiad nagu AI arenevad väga kiiresti. Hinnastame pikkuse, teema keerukuse ja asukoha järgi. Koolitame nii eesti kui inglise keeles.</p>
+<section id="tehisintellekt-ja-haridus" class="level1">
+<h1>Tehisintellekt ja haridus</h1>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
-<p>These have mostly been beginner-level practical workshops, often aimed at people with advanced skills in their discipline (such as humanities or social science), but little to no programming skills. A typical 1-day workshop consist of an introduction to R and basic exercises, followed by data visualization and/or wrangling exercises. Why start with dataviz? Because (1) it is an integral component of doing science anyway, and (2) it’s more fun to learn programming when you can immedately see and interpret the results of your first coding attempts (and making nice plots in R is very easy and intuitive, especially with packages like ggplot2 and plotly).</p>
+<p>Keskendume generatiivse tehisintellekti põhiste tööriistade (nt ChatGPT, Gemini Copilot, Elicit, Canva jt) kasutamisele, arutleme kuidas need tehnoloogilised edusammud mõjutavad haridust, õppimist ja õpetamist nii praegu kui lähitulevikus. Mõtestame tehisintellekti kasutamist hariduses ja õpime tehis-assistentidega koos töötama. Vastavalt publikule keskendub ettekanne ja praktilised näited kas üldharidusele või kõrgharidusele. Koolitus võib olla tunniajane sissejuhatus või 3-4 tunnist või ka pikem üritus, kus osalejad kohe neid tööriistu praktiliste harjutuste kaudu õppima suunatakse.</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<p><img src="img/4.jpg" class="img-fluid"> <br><br> <img src="img/1.jpg" class="img-fluid"> <br><br> <img src="img/2.jpg" class="img-fluid"></p>
+<p><img src="img/0.jpg" class="img-fluid"> <br><br> <img src="img/6.jpg" class="img-fluid"></p>
 </div>
 </div>
 </div>
 </section>
-<section id="generative-ai" class="level1">
-<h1>Generative AI</h1>
+<section id="tehisintellekt-ja-organisatsioon" class="level1">
+<h1>Tehisintellekt ja organisatsioon</h1>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
-<p>These digital skills seminar and lectures have focused on generative AI like ChatGPT, and how these technological advances are affecting education, learning, teaching and the workplace, now and in the near future. Audiences have ranged from schools and universities to private companies to public and government offices. Content is either focused on the education questions, or practical applicable skills and how to use AI to speed up tasks at work. Formats include shorter lectures and longer seminars with an overview lecture component followed by groupwork and brainstorming.</p>
+<p>Fookus samuti praktilistel AI-tööriistadel, aga keskendudes sellele, kuidas oma sektoris neid asju kõige paremini tööülesannete kiiremaks lahendamiseks ära kasutada, ja kuidas harjuta tehis-assistentidega koos toimetama. Soovi korral puudutame ka laiema automatiseerimise temaatikat: kui näiteks ChatGPT või Copiloti abil saab kiirelt ühte-kahte dokumenti kokku võtta ja töödelda või ühekaupa meile kirjutada, siis neid tööriistu tööle panevate keelemudelite abil otse (tavaliselt väikse IT-arendusega) on võimalik lihtsalt automatiseerida erinevaid protsesse palju suuremal skaalal.</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<p><img src="img/0.jpg" class="img-fluid"></p>
+<p><img src="img/2.jpg" class="img-fluid"></p>
 </div>
 </div>
 </div>
 </section>
-<section id="hackathons" class="level1">
-<h1>Hackathons</h1>
+<section id="ai-ja-analüütika" class="level1">
+<h1>AI ja analüütika</h1>
+<p>Suurte keelemudelite abil on võimalik kiirelt ja effektiivselt teostada andmeanalüütikat, mis veel hiljuti oleks vajanud iga uue küsimuse või probleemi jaoks eraldi masinõppe mudeli treenimist. Nendel koolitustel oleme vaadanud erinevate keele- ja multimodaalsete mudelite võimekusi kvalitatiivsete andmete (tekstid, pildid) analüüsimisel, ning praktiliste näidete abil näidanud, kuidas sellega võimestada nii andmete analüüsi kui selle abil protsesside automatiseerimist. Väiksemas mahus andmeanalüüsi võimaldavad aga ka mitmed juturobotid nagu ChatGPT, kus saab koodi jooksutada, mis omakorda aitab kiirelt luua statistilisi mudeleid, graafikuid või töödelda andmeid.</p>
+</section>
+<section id="andmeteadus-ja-r" class="level1">
+<h1>Andmeteadus ja R</h1>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
-<p>The hackathons have been usually combined with a preceding programming intro workshop. Our job is to introduce a topic and possibly datasets, facilitate groupwork, propose and assist with technical solutions and issues.</p>
+<p>Need on enamasti olnud algtaseme praktilised töötoad, mis on sageli suunatud inimestele, kellel on oma valdkonnas (näiteks humanitaar- või sotsiaalteadustes) kõrgtasemel oskused, kuid vähesed või puuduvad programmeerimisoskused. Tüüpiline ühepäevane töötuba sisaldab sissejuhatust programmeerimiskeelde R, millele järgneb andmete visualiseerimise ja/või töötlemise praktika. Miks on hea alustada andmete visualiseerimisest? Sest (1) see on nagunii teadustöö lahutamatu osa ning (2) programmeerimist on lõbusam õppida, kui saad kohe oma esimesi koodikatsetusi näha ja tõlgendada (ja R’is on ilusate graafikute loomine väga lihtne ja intuitiivne, eriti pakettidega nagu ggplot2 ja plotly).</p>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<p><img src="img/4.jpg" class="img-fluid"> <br><br> <img src="img/1.jpg" class="img-fluid"></p>
+</div>
+</div>
+</div>
+</section>
+<section id="häkatonid" class="level1">
+<h1>Häkatonid</h1>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
+<p>Oleme nii korraldanud kui aidanud kokku panna häkatone. Need on tavaliselt olnud kombineeritud eelneva praktilise töötoaga mõnel ülal nimetatud teemal. Häkatonil võime ka aidata teemavaldkonna tutvustamisega, pakkuda võimalikke andmestikke, suunata tiimide tööd (mentorlus) või pakkuda tehnilisi lahendusi ja abi probleemide lahendamisel.</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
 <p><img src="img/3.jpg" class="img-fluid"></p>
@@ -188,15 +195,15 @@ p {
 </div>
 </div>
 </section>
-<section id="custom-workshops" class="level1">
-<h1>Custom Workshops</h1>
+<section id="kohandatud-koolitused-ja-erilahendused" class="level1">
+<h1>Kohandatud koolitused ja erilahendused</h1>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 75.0%;justify-content: center;">
-<p>If our interests overlap, then we’d be happy to tailor a course, workshop or hackathon to suit the learning needs, data and interests of you or your colleagues or students. If you are an educational institution, then the expenses of organizing these could be potentially funded through a joint application to Erasmus+. Past workshops have also been funded by combinations of similar programmes and university travel grants, if the event involves research activities for the organizer. Feel free to get in touch to discuss options.</p>
+<p>Huvide kattumise korral oleme hea meelega valmis kohandama kursuse, töötoa või häkatoni vastavalt tellija ja tema kollektiivi või õpilaste õpivajadustele ja huvidele. Võib julgelt ühendust võtta ja arutada, et parim lahendus leida.</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<p><img src="img/5.jpg" class="img-fluid"> <br><br> <img src="img/6.jpg" class="img-fluid"></p>
+<p><img src="img/5.jpg" class="img-fluid"> <br><br></p>
 </div>
 </div>
 </div>

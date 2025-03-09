@@ -4,20 +4,23 @@ project:
 website:
   title: "Datafigure"
   favicon: "fav.png"
+  search: false
   navbar:
-    search: false
+    pinned: true
     left:
       - href: index.qmd
-        text: Workshops
+        text: Koolitused
+      - href: consulting.qmd
+        text: Konsult
       - href: past.qmd
-        text: Past workshops
-      - consulting.qmd
-      - href: media.qmd
-        text: Media coverage
-      - contact.qmd
+        text: Tööd ja kajastus
+      - href: contact.qmd
+        text: Kontakt
+      - href: english.qmd
+        text: In English
 format:
   html:
-    theme: sandstone
+    theme: simplex
     css: styles.css
 
 
