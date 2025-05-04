@@ -4,8 +4,8 @@ title: "Kontaktid"
 
 Datafigure OÜ on Eestis registreeritud ettevõte (registrikood 16297396).
 
-Võta ühendust ja küsi pakkumist:<br>
-<a href="mailto:datafigureEU@gmail.com">Email</a><br>
+Võta ühendust ja küsi lisainfot või pakkumist:<br>
+<a href="info (at) datafigure.eu">info (at) datafigure.eu</a><br>
 Telefon: +3725532434
 
 <br><br>
@@ -14,7 +14,7 @@ Telefon: +3725532434
 
 :::{layout="[3,1]"}
 
-Peamine koolitaja ja konsultant:<br><br>
+Juhtiv koolitaja ja konsultant:<br><br>
 Andres Karjus, PhD (keeleteadus), MSc (tehisintellekt)
 <br>
 Riiklikult tunnustatud teaduse ja tehnoloogia populariseerija [2024](https://etag.ee/tegevused/konkursid/eesti-teaduse-populariseerimise-auhind).
