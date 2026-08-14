@@ -1,5 +1,39 @@
 /* css styles */
 
+/* Keep centered layout fixed when navigation changes between short and long pages. */
+html {
+  overflow-y: scroll; /* Fallback for browsers without scrollbar-gutter. */
+}
+
+@supports (scrollbar-gutter: stable) {
+  html {
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+  }
+}
+
+/* Keep the desktop navbar stable while Open Sans is still loading. Quarto's
+   theme requests it from Google with display=swap, which otherwise changes
+   text metrics after first paint and triggers a second header measurement. */
+#quarto-header {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol";
+}
+
+@media (min-width: 992px) {
+  #quarto-header,
+  #quarto-header > .navbar {
+    height: 80px;
+  }
+
+  /* Quarto also recalculates this offset after 250 ms. Keep it equal to the
+     fixed desktop header height so that recalculation cannot move the page. */
+  body.nav-fixed {
+    padding-top: 80px !important;
+  }
+}
+
 a, a:link, a:visited {
     color: #858f9e !important;  
     text-decoration: none !important;
@@ -105,6 +139,16 @@ a:hover, a:focus {
   margin-right: auto;
   margin-left: auto;
   max-width: 950px; /* or 950px */
+}
+
+/* Quarto uses a wider grid on pages without a left TOC. Match the visible
+   content width to TOC pages so switching navbar tabs does not reflow. */
+@media (min-width: 992px) {
+  body.fullcontent #quarto-document-content {
+    width: 100%;
+    max-width: calc(800px - 3em);
+    justify-self: center;
+  }
 }
 
 
