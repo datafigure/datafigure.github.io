@@ -1,6 +1,16 @@
 project:
   type: website
   output-dir: docs
+  render:
+    - "*.qmd"
+  resources:
+    - CNAME
+    - insp2026.pdf
+    - img/**
+    - materjalid/**
+    - reports/*.png
+    - reports/*.pdf
+    - reports/*.html
 website:
   title: "Datafigure"
   favicon: "fav.png"

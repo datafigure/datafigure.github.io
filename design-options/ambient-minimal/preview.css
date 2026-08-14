@@ -1,0 +1,88 @@
+:root {
+  --ambient-base: #f4f7f2;
+  --ambient-line: rgba(54, 73, 49, 0.1);
+}
+
+html {
+  background: var(--ambient-base);
+}
+
+body {
+  background: transparent;
+  isolation: isolate;
+}
+
+body::before {
+  animation: ambient-drift 24s ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(72, 161, 5, 0.1), transparent 27%),
+    radial-gradient(circle at 84% 70%, rgba(94, 126, 112, 0.1), transparent 30%),
+    radial-gradient(circle at 55% 105%, rgba(181, 201, 173, 0.12), transparent 34%);
+  content: "";
+  inset: -18%;
+  pointer-events: none;
+  position: fixed;
+  transform: translate3d(-1.5%, -1%, 0) scale(1.03);
+  z-index: -1;
+}
+
+#quarto-header {
+  background: rgba(252, 253, 250, 0.78);
+  border-bottom: 1px solid var(--ambient-line);
+  box-shadow: 0 10px 42px rgba(45, 63, 40, 0.045);
+  backdrop-filter: blur(18px) saturate(120%);
+}
+
+#quarto-document-content {
+  background: rgba(255, 255, 253, 0.64);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  box-shadow:
+    0 22px 65px rgba(44, 67, 39, 0.07),
+    inset 0 0 0 1px rgba(54, 73, 49, 0.035);
+  padding: 1.8rem 2.05rem 2.4rem;
+  backdrop-filter: blur(13px) saturate(108%);
+}
+
+#TOC {
+  background: rgba(255, 255, 253, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 12px 38px rgba(44, 67, 39, 0.04);
+  padding: 0.55rem 0.72rem 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+#TOC .nav-link.active,
+#TOC .nav-link[aria-current="page"] {
+  border-left-color: var(--preview-green) !important;
+}
+
+#quarto-document-content img {
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(37, 59, 32, 0.12);
+}
+
+@keyframes ambient-drift {
+  0% {
+    opacity: 0.78;
+    transform: translate3d(-1.5%, -1%, 0) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(1.8%, 1.2%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  #quarto-document-content {
+    border-radius: 12px;
+    padding: 1.25rem 1rem 2rem;
+  }
+}

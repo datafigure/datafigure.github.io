@@ -1,0 +1,77 @@
+:root {
+  --preview-green: #48a105;
+  --preview-ink: #242824;
+  --preview-muted: #7c847c;
+}
+
+/* Type is reduced only in the content area. The navbar and TOC retain their
+   current 18 px sizing, as requested. */
+#quarto-document-content {
+  color: var(--preview-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 0.925rem;
+  font-kerning: normal;
+  line-height: 1.58;
+  letter-spacing: -0.004em;
+}
+
+#quarto-document-content h1.title {
+  color: var(--preview-ink);
+  font-size: 1.5rem !important;
+  font-weight: 520;
+  letter-spacing: -0.028em;
+  line-height: 1.18;
+}
+
+#quarto-document-content h1:not(.title) {
+  color: var(--preview-ink);
+  font-size: 1.16rem !important;
+  font-weight: 540;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+  margin-bottom: 0.82rem;
+  margin-top: 2.15rem;
+}
+
+#quarto-document-content h2 {
+  font-size: 1.08rem;
+  font-weight: 540;
+  letter-spacing: -0.012em;
+}
+
+#quarto-document-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#quarto-document-content p {
+  margin-bottom: 0.95rem;
+}
+
+#quarto-document-content li {
+  margin-bottom: 0.12rem;
+}
+
+#quarto-document-content img {
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+#quarto-header,
+#TOC {
+  font-size: 1rem;
+}
+
+.navbar-brand {
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 991.98px) {
+  #quarto-document-content {
+    font-size: 0.91rem;
+  }
+
+  #quarto-document-content h1.title {
+    font-size: 1.42rem !important;
+  }
+}

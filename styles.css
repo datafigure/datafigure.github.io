@@ -162,3 +162,229 @@ h1.title {
 h1 {
     font-size: 1.3rem !important; /* Adjust as needed */
 }
+
+
+/* Soft Canvas design */
+
+:root {
+  --preview-green: #48a105;
+  --preview-ink: #242824;
+  --preview-muted: #7c847c;
+  --canvas: #f3f5f0;
+  --surface: rgba(255, 255, 253, 0.84);
+  --hairline: rgba(45, 58, 43, 0.11);
+}
+
+#quarto-document-content {
+  color: var(--preview-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 0.925rem;
+  font-kerning: normal;
+  line-height: 1.58;
+  letter-spacing: -0.004em;
+}
+
+#quarto-document-content h1.title {
+  color: var(--preview-ink);
+  font-size: 1.5rem !important;
+  font-weight: 400;
+  letter-spacing: -0.028em;
+  line-height: 1.18;
+}
+
+#quarto-document-content h1:not(.title) {
+  color: var(--preview-ink);
+  font-size: 1.16rem !important;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+  margin-bottom: 0.82rem;
+  margin-top: 2.15rem;
+}
+
+#quarto-document-content h2 {
+  font-size: 1.08rem;
+  font-weight: 400;
+  letter-spacing: -0.012em;
+}
+
+#quarto-document-content h3 {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+#quarto-document-content p {
+  margin-bottom: 0.95rem;
+}
+
+#quarto-document-content li {
+  margin-bottom: 0.12rem;
+}
+
+#quarto-document-content img {
+  border-radius: 0;
+  box-shadow: none;
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+#quarto-header,
+#TOC {
+  font-size: 1rem;
+}
+
+.navbar-brand {
+  letter-spacing: -0.02em;
+}
+
+html,
+body {
+  background: var(--canvas);
+}
+
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: auto;
+}
+
+body {
+  background-image: linear-gradient(145deg, #f7f8f4 0%, #f1f4ef 62%, #eef2eb 100%);
+  background-attachment: fixed;
+}
+
+#quarto-header {
+  background: rgba(255, 255, 252, 0.9);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: 0 10px 32px rgba(34, 53, 30, 0.035);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+
+#quarto-header > .navbar {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+#quarto-document-content {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  box-shadow: 0 18px 55px rgba(36, 55, 32, 0.055);
+  margin-top: 8px;
+  padding: 1.75rem 1.25rem 2.35rem;
+}
+
+body.floating #quarto-document-content,
+body.fullcontent #quarto-document-content {
+  justify-self: center;
+  max-width: 786px;
+  width: calc(100% + 40px);
+}
+
+#title-block-header {
+  margin-bottom: 1.25rem;
+}
+
+#TOC {
+  background: rgba(255, 255, 253, 0.5);
+  border: 1px solid rgba(45, 58, 43, 0.08);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem 0.7rem;
+}
+
+#TOC .nav-link.active,
+#TOC .nav-link[aria-current="page"] {
+  border-left-color: var(--preview-green) !important;
+}
+
+#quarto-sidebar {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-top: 9px;
+  transform: translateX(12px);
+}
+
+@media (min-width: 992px) {
+  /* Quarto normally gives pages without a sidebar a wider body grid. Reuse
+     the floating/sidebar grid so the content card stays fixed across tabs. */
+  body.fullcontent:not(.floating):not(.docked) .page-columns {
+    grid-template-columns:
+      [screen-start] 1.5em
+      [screen-start-inset] 5fr
+      [page-start] minmax(25px, 50px)
+      [page-start-inset] minmax(50px, 150px)
+      [body-start-outset] minmax(25px, 50px)
+      [body-start] 1.5em
+      [body-content-start] minmax(500px, calc(800px - 3em))
+      [body-content-end] 1.5em
+      [body-end] minmax(25px, 50px)
+      [body-end-outset] minmax(50px, 150px)
+      [page-end-inset] minmax(25px, 50px)
+      [page-end] 5fr
+      [screen-end-inset] 1.5em
+      [screen-end];
+  }
+
+  #quarto-document-content {
+    transform: translateY(2.5px);
+  }
+
+  #quarto-header,
+  #quarto-header > .navbar {
+    height: 72px;
+  }
+
+  body.nav-fixed {
+    padding-top: 72px !important;
+  }
+
+  #quarto-header .navbar-container {
+    justify-content: center;
+    max-width: 920px;
+    position: relative;
+  }
+
+  #quarto-header .navbar-brand-container {
+    left: 0;
+    margin: 0 !important;
+    position: absolute;
+  }
+
+  #quarto-header #navbarCollapse {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+  }
+
+  #quarto-header .navbar-nav {
+    margin: 0 !important;
+  }
+
+  #quarto-header .navbar-brand {
+    font-size: 1.4rem;
+    font-weight: 400;
+  }
+
+  #quarto-header .navbar .nav-link {
+    font-size: 1.06rem !important;
+    font-weight: 400 !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  #quarto-document-content {
+    font-size: 0.91rem;
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  #quarto-document-content h1.title {
+    font-size: 1.42rem !important;
+  }
+
+  body.floating #quarto-document-content,
+  body.fullcontent #quarto-document-content {
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    justify-self: stretch;
+    max-width: 100%;
+    width: 100%;
+  }
+}

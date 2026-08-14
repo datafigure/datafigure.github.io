@@ -1,0 +1,73 @@
+:root {
+  --paper: #fbfbf9;
+  --rule: #dde1da;
+}
+
+html,
+body {
+  background: var(--paper);
+}
+
+#quarto-header {
+  background: rgba(251, 251, 249, 0.96);
+  border-bottom: 1px solid #d7dbd4;
+}
+
+#quarto-header {
+  position: relative;
+}
+
+#quarto-header::after {
+  background: var(--preview-green);
+  bottom: -1px;
+  content: "";
+  height: 2px;
+  left: max(0px, calc(50% - 475px));
+  position: absolute;
+  width: 4rem;
+}
+
+#quarto-document-content {
+  max-width: 70ch;
+}
+
+#title-block-header {
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 1.6rem;
+  padding-bottom: 1.05rem;
+  position: relative;
+}
+
+#title-block-header::after {
+  background: var(--preview-green);
+  bottom: -1px;
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  width: 3.25rem;
+}
+
+#quarto-document-content h1:not(.title) {
+  border-top: 1px solid var(--rule);
+  padding-top: 0.95rem;
+}
+
+#quarto-document-content p,
+#quarto-document-content ul {
+  max-width: 68ch;
+}
+
+#TOC {
+  border-left: 1px solid var(--rule);
+  padding-left: 0.75rem;
+}
+
+#TOC .nav-link.active,
+#TOC .nav-link[aria-current="page"] {
+  border-left-color: var(--preview-green) !important;
+}
+
+#quarto-document-content img {
+  filter: saturate(0.9) contrast(0.98);
+}

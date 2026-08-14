@@ -6,6 +6,8 @@ knitr:
     echo: false
     message: false
     warning: false
+execute:
+  enabled: false
 format: 
   html:
     toc: true
@@ -32,18 +34,13 @@ p {
 
 
 ```{r, eval=T, message=F, warning=F}
-library(readxl)
 library(ggplot2)
 library(dplyr)
 #  3942 tokenit
 # 21 gruppi, 43 vastust.
 # osalejaid 127. Registreerunuid oli 158. 
 
-# x = read_delim("C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutud_arvamused2.txt", col_names = T) %>% gather() %>% filter(!is.na(value))
-# write_excel_csv(x,"C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutud_tabel.txt")
   # ![](1.png){width=50%}
-
-x = read_excel("C:/Users/Andres/Dropbox/datafigure/materjalid/tallinn2023/kogutud_tabelis.xlsx")
 ```
 
 
